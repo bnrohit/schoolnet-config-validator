@@ -1,0 +1,64 @@
+! SchoolNet Example - GOOD CONFIG (reference)
+!
+hostname switch-classroom-02
+!
+! Proper VLAN structure
+vlan 10
+ name Students
+!
+vlan 20
+ name Staff
+!
+vlan 30
+ name Guest
+!
+vlan 999
+ name Native_VLAN_Trunk
+!
+vlan 1000
+ name Management
+!
+! Proper STP
+spanning-tree mode rapid-pvst
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+!
+! Security features
+ip dhcp snooping
+ip dhcp snooping vlan 10,20,30
+ip arp inspection vlan 10,20,30
+!
+! Uplink with proper security
+interface GigabitEthernet0/1
+ description Trunk to Core
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,1000
+ switchport nonegotiate
+ spanning-tree guard root
+!
+! Access ports with full security
+interface range GigabitEthernet0/2-24
+ description Student Access
+ switchport mode access
+ switchport access vlan 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+!
+! Management
+interface Vlan1000
+ ip address 10.0.0.10 255.255.255.0
+!
+! Secure access
+line vty 0 15
+ transport input ssh
+ login local
+!
+! No weak SNMP
+! Use SNMPv3 instead
+!
+end
