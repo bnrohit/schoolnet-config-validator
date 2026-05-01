@@ -1,0 +1,77 @@
+! SchoolNet Example - BROKEN CONFIG (for testing)
+! This config has intentional issues for the validator to catch
+!
+hostname switch-classroom-01
+!
+! Missing management VLAN
+vlan 1
+ name default
+!
+vlan 10
+ name Students
+!
+vlan 20
+ name Staff
+!
+! VLAN 30 referenced but never defined - WILL CAUSE ISSUE
+!
+interface Vlan1
+ ip address 192.168.1.10 255.255.255.0
+!
+interface GigabitEthernet0/1
+ description Uplink to Core
+ switchport mode trunk
+ ! CRITICAL: Native VLAN is 1 - vulnerable to VLAN hopping
+ ! CRITICAL: No allowed VLAN list - all VLANs pass
+ ! MEDIUM: No Root Guard on uplink
+!
+interface GigabitEthernet0/2
+ description Classroom AP
+ switchport mode access
+ switchport access vlan 10
+ ! MEDIUM: Missing PortFast - 30s delay on boot
+ ! HIGH: Missing BPDU Guard - rogue switch risk
+ ! MEDIUM: No port security
+!
+interface GigabitEthernet0/3
+ description Student Port
+ switchport mode access
+ switchport access vlan 30
+ ! CRITICAL: VLAN 30 does not exist!
+ ! HIGH: Port in VLAN 1 by default if VLAN missing
+ spanning-tree portfast
+ ! Still missing BPDU Guard
+!
+interface GigabitEthernet0/4
+ description Staff Port
+ switchport mode access
+ switchport access vlan 20
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ ! This one is actually okay
+!
+interface GigabitEthernet0/5
+ description Old Printer
+ switchport mode access
+ switchport access vlan 20
+ duplex half
+ speed 10
+ ! HIGH: Half-duplex - performance nightmare
+!
+! Global config issues:
+! HIGH: Telnet enabled (below)
+line vty 0 4
+ password cisco
+ login
+ transport input telnet
+!
+! HIGH: Weak SNMP community
+snmp-server community public RO
+snmp-server community private RW
+!
+! MEDIUM: No DHCP snooping
+! MEDIUM: No Dynamic ARP Inspection
+!
+! No spanning-tree mode configured
+!
+end

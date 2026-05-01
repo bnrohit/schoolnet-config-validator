@@ -1,0 +1,12 @@
+[
+  {
+    "name": "broken-switch",
+    "vendor": "cisco_ios",
+    "config_text": "hostname broken\ninterface Gi1/0/1\n switchport mode access\n switchport access vlan 999\n"
+  },
+  {
+    "name": "good-switch",
+    "vendor": "cisco_ios",
+    "config_text": "hostname good\nvlan 10\n name STAFF\ninterface Gi1/0/1\n switchport mode access\n switchport access vlan 10\n spanning-tree portfast\n spanning-tree bpduguard enable\n"
+  }
+]

@@ -1,0 +1,4 @@
+{
+  "vendor": "cisco_ios",
+  "config_text": "hostname sample-switch\n!\nvlan 10\n name STAFF\n!\ninterface GigabitEthernet1/0/1\n switchport mode access\n switchport access vlan 999\n!\n"
+}
