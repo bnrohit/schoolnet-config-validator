@@ -26,8 +26,9 @@ export default function App() {
             </div>
           </div>
           <div className="hero-actions">
-            <a href="https://github.com/bnrohit/schoolnet-config-validator" target="_blank" rel="noreferrer" className="btn secondary"><Github size={18}/> GitHub</a>
-            <a href="/docs" target="_blank" rel="noreferrer" className="btn"><BookOpen size={18}/> API Docs</a>
+<a href="https://github.com/bnrohit/schoolnet-config-validator" target="_blank" rel="noreferrer" className="btn secondary">
+  <ExternalLink size={18}/> GitHub
+</a>            <a href="/docs" target="_blank" rel="noreferrer" className="btn"><BookOpen size={18}/> API Docs</a>
           </div>
         </div>
         <div className="stats-grid">
