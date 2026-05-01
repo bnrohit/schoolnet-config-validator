@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, FileSearch, TerminalSquare, Wand2, Github, BookOpen, UploadCloud } from 'lucide-react';
+import { ShieldCheck, FileSearch, TerminalSquare, Wand2, BookOpen, UploadCloud, ExternalLink } from "lucide-react";
 import ConfigValidator from './components/ConfigValidator';
 import RemediationPanel from './components/RemediationPanel';
 import TroubleshootPanel from './components/TroubleshootPanel';
