@@ -44,4 +44,5 @@ export const LIVE_DEVICE_TYPES = [
   { id: 'fortinet', name: 'Fortinet FortiOS' },
   { id: 'paloalto_panos', name: 'Palo Alto PAN-OS' },
   { id: 'ubiquiti_edge', name: 'Ubiquiti EdgeOS' },
+  { id: 'linux', name: 'Linux server / host (SSH)' },
 ];

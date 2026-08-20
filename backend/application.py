@@ -1,28 +1,43 @@
-"""SchoolNet v1.5 application assembly.
+"""SchoolNet v1.6 application assembly.
 
-This module layers the Network Safety Graph endpoint onto the stable API without
-changing the safety model of existing endpoints. Docker/production should load
-``application:app``.
+Layers Network Safety Graph and Network Incident Investigator onto the stable
+configuration-analysis API. Production loads ``application:app``.
 """
-from typing import List
+from typing import Any, Dict, List
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 import api as base
+from incident_investigator import investigate_incident
 from network_graph import analyze_network_bundle
+from troubleshoot import commands as command_catalog
+from troubleshoot.linux_profile import LINUX_PROFILE
 
 
-# Existing endpoint functions read APP_VERSION from the api module at request
-# time, so this updates /health while preserving backward-compatible imports.
-base.APP_VERSION = "1.5.0"
+# Extend the shared read-only command dispatcher with a Linux server profile.
+# TroubleshootCommands resolves _profile_for at runtime, so both the dedicated
+# live diagnostics endpoint and Incident Investigator benefit from this profile.
+_original_profile_for = command_catalog._profile_for
+command_catalog.COMMON_PROFILES["linux"] = LINUX_PROFILE
+
+
+def _profile_for_with_linux(device_type: str):
+    if "linux" in (device_type or "").lower():
+        return LINUX_PROFILE
+    return _original_profile_for(device_type)
+
+
+command_catalog._profile_for = _profile_for_with_linux
+
+base.APP_VERSION = "1.6.0"
 app = base.app
 app.version = base.APP_VERSION
 app.description = (
-    "Multi-vendor network configuration analysis, offline change-impact review, "
-    "multi-device Network Safety Graph inference, rollback-aware planning, and "
-    "optional read-only diagnostics. No automatic production changes."
+    "Multi-vendor configuration analysis, Network Safety Graph inference, evidence-driven "
+    "read-only incident investigation, change-impact review, rollback-aware planning, and "
+    "optional read-only network-device/Linux SSH diagnostics. No automatic production changes."
 )
 
 
@@ -38,14 +53,31 @@ class NetworkGraphRequest(BaseModel):
     devices: List[NetworkGraphDevice]
 
 
+class IncidentDeviceSnapshot(BaseModel):
+    enabled: bool = False
+    host: str = ""
+    username: str = ""
+    password: str = ""
+    secret: str = ""
+    device_type: str = "cisco_ios"
+    port: int = 22
+    categories: List[str] = Field(default_factory=lambda: [
+        "basic", "interfaces", "errors", "neighbors", "routing", "vlan", "stp", "security"
+    ])
+
+
+class IncidentRequest(BaseModel):
+    target: str = Field(..., description="Authorized target hostname or IP")
+    ports: List[int] = Field(default_factory=lambda: [22, 53, 80, 443], description="Expected TCP ports to test")
+    dns_server: str = Field("", description="Optional DNS resolver to query")
+    run_trace: bool = True
+    security_surface: bool = False
+    device: IncidentDeviceSnapshot = Field(default_factory=IncidentDeviceSnapshot)
+
+
 @app.post("/api/v1/network-graph", tags=["Network Safety Graph"])
 async def network_safety_graph(request: NetworkGraphRequest):
-    """Infer multi-device relationships and evaluate cross-device change risk.
-
-    The result is advisory and non-executable. Relationships are confidence
-    scored because configuration and neighbor snippets cannot prove all runtime
-    topology or dependencies.
-    """
+    """Infer multi-device relationships and evaluate cross-device change risk."""
     if not 2 <= len(request.devices) <= 50:
         raise HTTPException(status_code=400, detail="Provide between 2 and 50 devices.")
 
@@ -83,4 +115,58 @@ async def network_graph_capabilities():
         "inputs": ["current configs", "optional proposed configs", "optional CDP/LLDP/equivalent neighbor evidence"],
         "inference": ["peer relationships", "shared transit links", "BGP peer ownership", "trunks", "VLAN/gateway presence", "routing relationships", "single points of failure"],
         "change_analysis": ["network change gate", "cross-device invariants", "impact propagation", "peer coordination", "rollback contract", "post-change proof"],
+    }
+
+
+@app.post("/api/v1/investigate", tags=["Network Incident Investigator"])
+async def investigate(request: IncidentRequest):
+    """Run bounded read-only diagnostics and correlate likely incident causes.
+
+    Diagnostics originate from the SchoolNet backend container. Public targets
+    are denied unless ALLOW_PUBLIC_DIAGNOSTICS=true. Optional SSH collection is
+    separately gated by ENABLE_LIVE_SSH=true and uses the predefined read-only
+    command catalog only.
+    """
+    try:
+        return JSONResponse(content=investigate_incident(
+            target=request.target,
+            ports=request.ports,
+            dns_server=request.dns_server,
+            run_trace=request.run_trace,
+            security_surface=request.security_surface,
+            device=request.device.model_dump(),
+        ))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Incident investigation failed: {exc}")
+
+
+@app.get("/api/v1/investigate/capabilities", tags=["Network Incident Investigator"])
+async def investigate_capabilities() -> Dict[str, Any]:
+    return {
+        "version": base.APP_VERSION,
+        "mode": "bounded_read_only_incident_investigation",
+        "probe_origin": "SchoolNet backend container",
+        "network_evidence": [
+            "system resolver + dig A/AAAA", "reverse lookup", "ICMP", "server route lookup",
+            "traceroute", "bounded TCP service tests", "HTTP status", "TLS trust/protocol/certificate",
+        ],
+        "optional_device_evidence": [
+            "network-device identity/uptime", "interfaces/counters", "logs/errors", "CDP/LLDP",
+            "routing neighbors/table", "VLAN/trunks", "spanning tree", "management/access security state",
+            "Linux kernel/uptime", "Linux addresses/routes", "Linux sockets", "failed systemd units", "warning logs",
+        ],
+        "correlation": [
+            "DNS vs path vs service isolation", "ICMP filtering detection", "application-vs-network distinction",
+            "TLS failure diagnosis", "management exposure findings", "device/server log/counter/routing evidence",
+            "ranked root-cause hypotheses", "Incident Passport export data",
+        ],
+        "guardrails": {
+            "auto_execute": False,
+            "arbitrary_shell": False,
+            "public_targets_default": False,
+            "live_ssh_default": False,
+            "max_tcp_ports": 16,
+        },
     }

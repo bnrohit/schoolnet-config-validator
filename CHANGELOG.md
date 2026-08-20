@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.6.0
+
+- Added **Network Incident Investigator**, an evidence-driven read-only troubleshooting workflow.
+- Added DNS A/AAAA and reverse lookup evidence, optional resolver selection, ICMP, backend route lookup, traceroute, bounded TCP checks, HTTP status, and TLS trust/protocol/certificate checks.
+- Added correlation that distinguishes DNS, path, service/application, TLS, ICMP-filtering, and device-side failure signatures instead of treating every failed ping as an outage.
+- Added optional read-only SSH evidence correlation using the existing multi-vendor command catalog.
+- Added detection of native-VLAN mismatch, error-disabled interfaces, routing adjacency problems, link flaps, duplicate IP/MAC movement, AAA/DHCP warnings, and non-zero interface error counters from collected device evidence.
+- Added optional bounded management-exposure checks and security findings for plaintext/inappropriately reachable administrative services.
+- Added ranked root-cause hypotheses, confidence, recommended engineer next steps, and exportable Incident Passport JSON.
+- Added guardrails: no arbitrary shell commands, no automatic changes, maximum 16 TCP checks, public diagnostics disabled by default, and live SSH disabled by default.
+- Added dedicated Incident Investigator UI and diagnostic utilities to the production backend image.
+
 ## v1.5.0
 
 - Added Network Safety Graph for multi-device topology and dependency inference.
