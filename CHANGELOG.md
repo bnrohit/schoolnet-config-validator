@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.8.0
+
+- Added configurable enterprise-default DNS via `DEFAULT_DNS_SERVER`; per-request resolver selection still overrides it.
+- Added resolver provenance to investigation results so engineers can distinguish request-selected, SchoolNet-default, and container/system DNS context.
+- Added `/api/v1/runtime-policy` and an operational-policy banner showing resolver context, live SSH state, HTTPS credential policy, and automatic application assurance state.
+- Added HTTPS gating for live SSH/device credentials by default with `REQUIRE_HTTPS_FOR_LIVE_CREDENTIALS=true`; credential-free troubleshooting remains available over HTTP.
+- Added `Cache-Control: no-store` / `Pragma: no-cache` to live investigation responses.
+- Added automatic bounded HTTP/HTTPS assurance on ports 80/443 plus explicitly requested web ports.
+- Added HTTP status, selected response/security headers, TLS protocol/cipher/trust/SAN/expiry evidence, HSTS/CSP observations, and server-banner disclosure review.
+- Added Application/TLS fault-domain updates from the deeper assurance pass so those domains are tested automatically when a web service is reachable.
+- Added production policy toggles for `AUTO_APPLICATION_PROBE` and emergency-only `ALLOW_INSECURE_LIVE_CREDENTIALS`.
+- Added tests for resolver precedence and HTTPS credential transport policy.
+
 ## v1.7.0
 
 - Added **Deep Network Engineer**, a bounded read-only one-target troubleshooting workflow.
