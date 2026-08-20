@@ -12,7 +12,24 @@ from pydantic import BaseModel, Field
 import api as base
 from incident_investigator import investigate_incident
 from network_graph import analyze_network_bundle
+from troubleshoot import commands as command_catalog
+from troubleshoot.linux_profile import LINUX_PROFILE
 
+
+# Extend the shared read-only command dispatcher with a Linux server profile.
+# TroubleshootCommands resolves _profile_for at runtime, so both the dedicated
+# live diagnostics endpoint and Incident Investigator benefit from this profile.
+_original_profile_for = command_catalog._profile_for
+command_catalog.COMMON_PROFILES["linux"] = LINUX_PROFILE
+
+
+def _profile_for_with_linux(device_type: str):
+    if "linux" in (device_type or "").lower():
+        return LINUX_PROFILE
+    return _original_profile_for(device_type)
+
+
+command_catalog._profile_for = _profile_for_with_linux
 
 base.APP_VERSION = "1.6.0"
 app = base.app
@@ -20,7 +37,7 @@ app.version = base.APP_VERSION
 app.description = (
     "Multi-vendor configuration analysis, Network Safety Graph inference, evidence-driven "
     "read-only incident investigation, change-impact review, rollback-aware planning, and "
-    "optional read-only SSH diagnostics. No automatic production changes."
+    "optional read-only network-device/Linux SSH diagnostics. No automatic production changes."
 )
 
 
@@ -136,12 +153,13 @@ async def investigate_capabilities() -> Dict[str, Any]:
             "traceroute", "bounded TCP service tests", "HTTP status", "TLS trust/protocol/certificate",
         ],
         "optional_device_evidence": [
-            "identity/uptime", "interfaces/counters", "logs/errors", "CDP/LLDP", "routing neighbors/table",
-            "VLAN/trunks", "spanning tree", "management/access security state", "Linux host health where supported",
+            "network-device identity/uptime", "interfaces/counters", "logs/errors", "CDP/LLDP",
+            "routing neighbors/table", "VLAN/trunks", "spanning tree", "management/access security state",
+            "Linux kernel/uptime", "Linux addresses/routes", "Linux sockets", "failed systemd units", "warning logs",
         ],
         "correlation": [
             "DNS vs path vs service isolation", "ICMP filtering detection", "application-vs-network distinction",
-            "TLS failure diagnosis", "management exposure findings", "device log/counter/routing evidence",
+            "TLS failure diagnosis", "management exposure findings", "device/server log/counter/routing evidence",
             "ranked root-cause hypotheses", "Incident Passport export data",
         ],
         "guardrails": {
