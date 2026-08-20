@@ -5,8 +5,9 @@ from .trunk_check import TrunkCheck
 from .duplex_check import DuplexCheck
 from .security_check import SecurityCheck
 from .uplink_check import UplinkCheck
+from .expert_check import NetworkExpertCheck
 
 __all__ = [
     'VlanCheck', 'NativeVlanCheck', 'StpCheck', 'TrunkCheck',
-    'DuplexCheck', 'SecurityCheck', 'UplinkCheck'
+    'DuplexCheck', 'SecurityCheck', 'UplinkCheck', 'NetworkExpertCheck'
 ]

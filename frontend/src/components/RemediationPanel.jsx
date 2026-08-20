@@ -1,184 +1,164 @@
 import React, { useState } from 'react';
-import { FileText, Wand2, Download, Copy, CheckCircle, AlertCircle } from 'lucide-react';
+import { Wand2, Download, Copy, CheckCircle, AlertCircle, ShieldCheck, RotateCcw, ClipboardCheck, Activity } from 'lucide-react';
 import axios from 'axios';
+import { OFFLINE_VENDORS } from '../vendorCatalog';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || '';
+
+function ListBlock({ title, items, icon: Icon }) {
+  if (!items?.length) return null;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <p className="font-semibold text-slate-900 flex items-center gap-2"><Icon size={17}/>{title}</p>
+      <ol className="mt-2 list-decimal pl-5 space-y-1 text-sm text-slate-700">
+        {items.map((item, idx) => <li key={idx}>{item}</li>)}
+      </ol>
+    </div>
+  );
+}
 
 export default function RemediationPanel() {
   const [configText, setConfigText] = useState('');
-  const [vendor, setVendor] = useState('cisco_ios');
-  const [script, setScript] = useState('');
+  const [vendor, setVendor] = useState('auto');
+  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [validationResult, setValidationResult] = useState(null);
 
-  const generateRemediation = async () => {
+  const generatePlan = async () => {
     if (!configText.trim()) {
-      setError('Please paste a configuration first');
+      setError('Paste a sanitized configuration first.');
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
-      // First validate to get findings
-      const validateRes = await axios.post(`${API_URL}/api/v1/validate`, {
-        config_text: configText,
-        vendor
-      });
-
-      setValidationResult(validateRes.data);
-
-      if (validateRes.data.summary.total === 0) {
-        setScript('! No issues found - no remediation needed!\n! Your configuration looks good.');
-        setLoading(false);
-        return;
-      }
-
-      // Then generate remediation
-      const remediateRes = await axios.post(`${API_URL}/api/v1/remediate`, {
-        findings: validateRes.data.findings,
-        vendor
-      });
-
-      setScript(remediateRes.data.script);
+      const validateRes = await axios.post(`${API_URL}/api/v1/validate`, { config_text: configText, vendor });
+      setResult(validateRes.data);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to generate remediation');
+      setError(err.response?.data?.detail || 'Failed to generate the review plan.');
     } finally {
       setLoading(false);
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(script);
+  const planText = () => {
+    if (!result) return '';
+    const lines = [
+      `# SchoolNet Safety-First Change Plan`,
+      `Device: ${result.hostname || 'unknown'}`,
+      `Platform: ${result.vendor || 'unknown'}`,
+      `Risk: ${result.executive_summary?.risk_label || 'unknown'} (${result.executive_summary?.risk_score ?? 0}/100)`,
+      '',
+      'IMPORTANT: This is a review plan, not an auto-deployment script. Validate vendor syntax and use a maintenance window/OOB access for high-impact changes.',
+      '',
+    ];
+    (result.findings || []).forEach((finding, idx) => {
+      lines.push(`## ${idx + 1}. ${String(finding.severity || 'info').toUpperCase()} — ${finding.message}`);
+      if (finding.impact) lines.push(`Impact: ${finding.impact}`);
+      lines.push(`Recommendation: ${finding.remediation || ''}`);
+      if (finding.evidence) lines.push(`Evidence: ${finding.evidence}`);
+      const sections = [
+        ['Pre-change checks', finding.pre_checks],
+        ['Controlled change plan', finding.change_plan],
+        ['Rollback', finding.rollback],
+        ['Post-change validation', finding.post_checks],
+      ];
+      sections.forEach(([title, items]) => {
+        if (items?.length) {
+          lines.push(`${title}:`);
+          items.forEach((item, i) => lines.push(`  ${i + 1}. ${item}`));
+        }
+      });
+      lines.push('');
+    });
+    return lines.join('\n');
+  };
+
+  const copyPlan = async () => {
+    await navigator.clipboard.writeText(planText());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const downloadScript = () => {
-    const blob = new Blob([script], { type: 'text/plain' });
+  const downloadPlan = () => {
+    const blob = new Blob([planText()], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'remediation-script.txt';
+    a.download = `${result?.hostname || 'network-device'}_safe_change_plan.md`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Wand2 className="text-school-600" size={28} />
+        <ShieldCheck className="text-school-600" size={28} />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Auto Remediation</h1>
-          <p className="text-gray-500">Generate fix scripts from detected configuration issues</p>
+          <h1 className="text-2xl font-bold text-slate-950">Safety-First Change Plan</h1>
+          <p className="text-slate-500">Turn detected risks into pre-checks, staged changes, rollback criteria, and post-change validation.</p>
         </div>
       </div>
 
-      {/* Input */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-          <select 
-            value={vendor} 
-            onChange={(e) => setVendor(e.target.value)}
-            className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="cisco_ios">Cisco IOS</option>
-            <option value="cisco_iosxe">Cisco IOS-XE</option>
-            <option value="aruba_aoscx">Aruba AOS-CX</option>
-          </select>
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900 flex gap-3">
+        <AlertCircle size={20} className="flex-none" />
+        <p><strong>No automatic device changes.</strong> SchoolNet intentionally produces a review-first plan. Vendor syntax, topology dependencies, redundancy, maintenance window, and out-of-band recovery must be validated by an engineer before production changes.</p>
+      </div>
 
-          <button
-            onClick={generateRemediation}
-            disabled={loading}
-            className="px-4 py-2 bg-school-600 text-white rounded-lg hover:bg-school-700 disabled:opacity-50 flex items-center gap-2 text-sm font-medium"
-          >
-            {loading ? 'Analyzing...' : 'Generate Fix Script'}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-slate-100 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+          <select value={vendor} onChange={(e) => setVendor(e.target.value)} className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm lg:min-w-[360px]">
+            {OFFLINE_VENDORS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+          <button onClick={generatePlan} disabled={loading || !configText.trim()} className="px-4 py-2.5 bg-school-600 text-white rounded-lg hover:bg-school-700 disabled:opacity-50 flex items-center justify-center gap-2 text-sm font-semibold">
+            <Wand2 size={17}/>{loading ? 'Analyzing...' : 'Build Safe Change Plan'}
           </button>
         </div>
-
         <textarea
           value={configText}
           onChange={(e) => setConfigText(e.target.value)}
-          placeholder={`! Paste configuration to analyze...
-! The tool will detect issues and generate a fix script`}
-          className="w-full h-64 p-4 font-mono text-sm bg-gray-900 text-green-400 resize-none focus:outline-none"
+          placeholder="Paste a sanitized configuration. SchoolNet will analyze it and build a non-executable engineering change plan."
+          className="w-full h-72 p-4 font-mono text-sm bg-slate-950 text-emerald-300 resize-none focus:outline-none"
           spellCheck={false}
         />
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 text-red-700">
-          <AlertCircle size={20} />
-          <p>{error}</p>
-        </div>
-      )}
+      {error && <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700"><AlertCircle size={20}/><p>{error}</p></div>}
 
-      {/* Validation Summary */}
-      {validationResult && validationResult.summary.total > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-3">Issues Found</h3>
-          <div className="grid grid-cols-5 gap-3">
-            {Object.entries(validationResult.summary).filter(([k]) => k !== 'total').map(([key, count]) => (
-              <div key={key} className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className={`text-xl font-bold ${
-                  key === 'critical' ? 'text-red-600' :
-                  key === 'high' ? 'text-orange-600' :
-                  key === 'medium' ? 'text-yellow-600' :
-                  key === 'low' ? 'text-blue-600' : 'text-gray-600'
-                }`}>{count}</p>
-                <p className="text-xs text-gray-500 capitalize">{key}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Generated Script */}
-      {script && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText size={20} className="text-school-600" />
-              <h3 className="font-semibold text-gray-900">Generated Remediation Script</h3>
+      {result && (
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Change Review</p>
+              <h2 className="text-xl font-bold text-slate-950 mt-1">{result.hostname || 'Unknown Device'} · {result.vendor}</h2>
+              <p className="text-sm text-slate-600 mt-1">{result.summary.total} finding(s) · risk {result.executive_summary?.risk_label} ({result.executive_summary?.risk_score}/100)</p>
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={copyToClipboard}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                {copied ? <CheckCircle size={16} className="text-green-500" /> : <Copy size={16} />}
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
-              <button
-                onClick={downloadScript}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-school-600 text-white hover:bg-school-700 rounded-lg transition-colors"
-              >
-                <Download size={16} />
-                Download
-              </button>
+              <button onClick={copyPlan} className="flex items-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg">{copied ? <CheckCircle size={16} className="text-emerald-600"/> : <Copy size={16}/>} {copied ? 'Copied' : 'Copy Plan'}</button>
+              <button onClick={downloadPlan} className="flex items-center gap-2 px-3 py-2 text-sm bg-school-600 text-white hover:bg-school-700 rounded-lg"><Download size={16}/> Download</button>
             </div>
           </div>
 
-          <div className="relative">
-            <pre className="p-4 font-mono text-sm bg-gray-900 text-green-400 overflow-x-auto max-h-96 overflow-y-auto">
-              {script}
-            </pre>
-          </div>
-
-          <div className="p-4 bg-yellow-50 border-t border-yellow-200">
-            <div className="flex items-start gap-3">
-              <AlertCircle size={18} className="text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-yellow-800">⚠️ Review Before Applying</p>
-                <p className="text-sm text-yellow-700 mt-1">
-                  This script was auto-generated. Always review in a lab environment first. 
-                  Apply during a maintenance window. Save your current config with <code className="bg-yellow-100 px-1 rounded">write memory</code> before changes.
-                </p>
+          {(result.findings || []).map((finding, idx) => (
+            <div key={idx} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{finding.severity} · {finding.check_type}</span>
+                  <h3 className="font-bold text-slate-950 mt-1">{finding.message}</h3>
+                  {finding.impact && <p className="text-sm text-slate-600 mt-1">{finding.impact}</p>}
+                </div>
+                <span className="text-xs text-slate-500 whitespace-nowrap">{finding.confidence || 'medium'} confidence</span>
+              </div>
+              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900"><strong>Recommendation:</strong> {finding.remediation}</div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
+                <ListBlock title="Pre-change checks" items={finding.pre_checks} icon={ClipboardCheck}/>
+                <ListBlock title="Controlled change" items={finding.change_plan} icon={ShieldCheck}/>
+                <ListBlock title="Rollback" items={finding.rollback} icon={RotateCcw}/>
+                <ListBlock title="Post-change validation" items={finding.post_checks} icon={Activity}/>
               </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
     </div>
