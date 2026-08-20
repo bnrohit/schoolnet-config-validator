@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
-import { ShieldCheck, FileSearch, TerminalSquare, Wand2, BookOpen, ExternalLink, GitCompareArrows, Network, Radar } from "lucide-react";
+import { ShieldCheck, FileSearch, TerminalSquare, Wand2, BookOpen, ExternalLink, GitCompareArrows, Network, Radar, BrainCircuit } from "lucide-react";
 import ConfigValidator from './components/ConfigValidator';
 import RemediationPanel from './components/RemediationPanel';
 import TroubleshootPanel from './components/TroubleshootPanel';
 import ChangeImpactLab from './components/ChangeImpactLab';
 import NetworkSafetyGraph from './components/NetworkSafetyGraph';
 import IncidentInvestigator from './components/IncidentInvestigator';
+import DeepNetworkEngineer from './components/DeepNetworkEngineer';
 
 const tabs = [
   { id: 'validate', label: 'Analyze Config', icon: FileSearch },
   { id: 'impact', label: 'Change Impact Lab', icon: GitCompareArrows },
   { id: 'graph', label: 'Network Safety Graph', icon: Network },
   { id: 'investigate', label: 'Incident Investigator', icon: Radar },
+  { id: 'deep', label: 'Deep Network Engineer', icon: BrainCircuit },
   { id: 'remediate', label: 'Safe Change Plan', icon: Wand2 },
   { id: 'troubleshoot', label: 'Read-Only Live', icon: TerminalSquare },
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('investigate');
+  const [activeTab, setActiveTab] = useState('deep');
   const ActiveIcon = tabs.find(t => t.id === activeTab)?.icon || FileSearch;
 
   return (
@@ -28,7 +30,7 @@ export default function App() {
             <ShieldCheck className="brand-icon" size={42} />
             <div>
               <h1>SchoolNet Config Validator</h1>
-              <p className="tagline">Multi-vendor network intelligence, live incident evidence correlation, peer-aware change safety, and outage prevention.</p>
+              <p className="tagline">Multi-vendor network intelligence, deep read-only troubleshooting, live incident evidence correlation, peer-aware change safety, and outage prevention.</p>
             </div>
           </div>
           <div className="hero-actions">
@@ -37,9 +39,9 @@ export default function App() {
           </div>
         </div>
         <div className="stats-grid">
-          <div className="stat"><strong>Incident Investigator</strong><span>DNS · path · services · TLS · evidence</span></div>
+          <div className="stat"><strong>Deep Network Engineer</strong><span>DNS · routes · traces · OSPF/BGP · security</span></div>
+          <div className="stat"><strong>Incident Investigator</strong><span>Evidence correlation · probable cause</span></div>
           <div className="stat"><strong>Network Safety Graph</strong><span>Peers · paths · gateway context</span></div>
-          <div className="stat"><strong>Change pre-flight</strong><span>Blast radius · gate · rollback</span></div>
           <div className="stat"><strong>Safety-first</strong><span>Bounded read-only diagnostics</span></div>
         </div>
       </header>
@@ -68,12 +70,13 @@ export default function App() {
         {activeTab === 'impact' && <ChangeImpactLab />}
         {activeTab === 'graph' && <NetworkSafetyGraph />}
         {activeTab === 'investigate' && <IncidentInvestigator />}
+        {activeTab === 'deep' && <DeepNetworkEngineer />}
         {activeTab === 'remediate' && <RemediationPanel />}
         {activeTab === 'troubleshoot' && <TroubleshootPanel />}
       </main>
 
       <footer className="footer">
-        <ShieldCheck size={16}/> SchoolNet v1.6 — Incident Investigator · Network Safety Graph · change pre-flight · review-first engineering.
+        <ShieldCheck size={16}/> SchoolNet v1.7 — Deep Network Engineer · Incident Investigator · Network Safety Graph · change pre-flight · review-first engineering.
       </footer>
     </div>
   );
