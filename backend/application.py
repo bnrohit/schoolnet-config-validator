@@ -1,8 +1,8 @@
-"""SchoolNet v1.8 application assembly.
+"""SchoolNet v1.9 application assembly.
 
-Layers Network Safety Graph, Incident Investigator, Deep Network Engineer, and
-operational-hardening controls onto the stable configuration-analysis API.
-Production loads ``application:app``.
+Layers configuration analysis, safety graph, incident/deep diagnostics, path
+intelligence, resolver/application assurance, and opt-in diagnostic history onto
+the stable API. Production loads ``application:app``.
 """
 import os
 from typing import Any, Dict, List
@@ -13,14 +13,11 @@ from pydantic import BaseModel, Field
 
 import api as base
 from deep_diagnostics import deep_investigate
+from diagnostic_history import compare_runs, get_run, history_policy, list_runs, save_run
 from incident_investigator import investigate_incident
 from network_graph import analyze_network_bundle
-from ops_assurance import (
-    application_assurance,
-    credential_transport_allowed,
-    effective_dns_server,
-    env_bool,
-)
+from ops_assurance import application_assurance, credential_transport_allowed, effective_dns_server, env_bool
+from path_intelligence import build_path_intelligence
 from troubleshoot import commands as command_catalog
 from troubleshoot.linux_profile import LINUX_PROFILE
 from troubleshoot.routing_deep import extend_routing_profiles
@@ -39,15 +36,15 @@ def _profile_for_with_linux(device_type: str):
 command_catalog._profile_for = _profile_for_with_linux
 extend_routing_profiles(command_catalog)
 
-base.APP_VERSION = "1.8.0"
+base.APP_VERSION = "1.9.0"
 app = base.app
 app.version = base.APP_VERSION
 app.description = (
-    "Multi-vendor configuration analysis, Network Safety Graph inference, evidence-driven "
-    "incident investigation, deep DNS/route/traceroute/service/security diagnostics, "
-    "application/TLS assurance, resolver-context controls, change-impact review, rollback-aware "
-    "planning, and optional read-only network-device/Linux SSH. No automatic production changes "
-    "or exploitation."
+    "Multi-vendor configuration analysis, Network Safety Graph inference, deep incident diagnostics, "
+    "resolver-aware application/TLS assurance, PTR-enriched multi-mode path intelligence with bounded "
+    "loss/jitter sampling, VRF-aware route evidence, opt-in diagnostic history/drift comparison, "
+    "change-impact review, rollback-aware planning, and optional read-only device/Linux SSH. "
+    "No automatic production changes, brute force, broad scanning, or exploitation."
 )
 
 
@@ -71,6 +68,7 @@ class IncidentDeviceSnapshot(BaseModel):
     secret: str = ""
     device_type: str = "cisco_ios"
     port: int = 22
+    vrf: str = Field("", description="Optional routing instance/VRF for bounded route lookups")
     categories: List[str] = Field(default_factory=lambda: [
         "basic", "interfaces", "errors", "neighbors", "routing", "vlan", "stp", "security"
     ])
@@ -83,6 +81,9 @@ class IncidentRequest(BaseModel):
     run_trace: bool = True
     security_surface: bool = False
     auto_application_probe: bool = True
+    path_sample_count: int = Field(5, ge=3, le=10, description="Bounded samples per discovered hop")
+    save_history: bool = False
+    history_label: str = Field("", max_length=120)
     device: IncidentDeviceSnapshot = Field(default_factory=IncidentDeviceSnapshot)
 
 
@@ -115,7 +116,6 @@ def _no_store(payload: Dict[str, Any]) -> JSONResponse:
 async def network_safety_graph(request: NetworkGraphRequest):
     if not 2 <= len(request.devices) <= 50:
         raise HTTPException(status_code=400, detail="Provide between 2 and 50 devices.")
-
     sanitized = []
     for idx, device in enumerate(request.devices):
         if not device.config_text.strip():
@@ -132,7 +132,6 @@ async def network_safety_graph(request: NetworkGraphRequest):
             "proposed_config": base._sanitize_config(device.proposed_config) if device.proposed_config else "",
             "neighbor_text": base._sanitize_config(device.neighbor_text) if device.neighbor_text else "",
         })
-
     try:
         return JSONResponse(content=analyze_network_bundle(sanitized))
     except ValueError as exc:
@@ -165,6 +164,8 @@ async def runtime_policy():
         "allow_insecure_live_credentials": env_bool("ALLOW_INSECURE_LIVE_CREDENTIALS", False),
         "public_diagnostics_enabled": env_bool("ALLOW_PUBLIC_DIAGNOSTICS", False),
         "auto_application_probe_default": env_bool("AUTO_APPLICATION_PROBE", True),
+        "diagnostic_history": history_policy(),
+        "path_intelligence": {"max_samples_per_hop": 10, "max_hops": 24, "indefinite_monitoring": False},
     }
 
 
@@ -184,6 +185,8 @@ async def investigate(req: IncidentRequest, http_request: Request):
         payload["version"] = base.APP_VERSION
         payload["resolver_context"] = resolver
         payload["credential_transport"] = transport
+        if req.save_history:
+            payload["history"] = save_run(payload, req.target, req.history_label, kind="incident")
         return _no_store(payload)
     except HTTPException:
         raise
@@ -208,19 +211,7 @@ async def investigate_capabilities() -> Dict[str, Any]:
             "deep routing/OSPF/BGP/HA state", "VLAN/trunks", "spanning tree", "management/access security state",
             "Linux kernel/uptime", "Linux addresses/routes", "Linux sockets", "failed systemd units", "warning logs",
         ],
-        "correlation": [
-            "DNS vs path vs service isolation", "ICMP filtering detection", "application-vs-network distinction",
-            "TLS failure diagnosis", "management exposure findings", "device/server log/counter/routing evidence",
-            "ranked root-cause hypotheses", "Incident Passport export data",
-        ],
-        "guardrails": {
-            "auto_execute": False,
-            "arbitrary_shell": False,
-            "public_targets_default": False,
-            "live_ssh_default": False,
-            "https_credentials_default": True,
-            "max_tcp_ports": 16,
-        },
+        "guardrails": {"auto_execute": False, "arbitrary_shell": False, "public_targets_default": False, "live_ssh_default": False, "https_credentials_default": True, "max_tcp_ports": 16},
     }
 
 
@@ -259,6 +250,14 @@ async def deep_diagnostics(req: IncidentRequest, http_request: Request):
                 item["evidence"] = "; ".join(f"port {probe.get('port')} {probe.get('protocol')} verified={probe.get('verified')}" for probe in assurance["tls"])[:800]
 
         payload.setdefault("security", {}).setdefault("findings", []).extend(assurance.get("findings", []))
+        payload["path_intelligence"] = build_path_intelligence(
+            payload,
+            dns_server=resolver["server"],
+            sample_count=req.path_sample_count,
+            device=req.device.model_dump(),
+        )
+        if req.save_history:
+            payload["history"] = save_run(payload, req.target, req.history_label, kind="deep")
         return _no_store(payload)
     except HTTPException:
         raise
@@ -274,32 +273,49 @@ async def deep_diagnostics_capabilities() -> Dict[str, Any]:
         "version": base.APP_VERSION,
         "mode": "deep_bounded_read_only_network_engineer",
         "probe_origin": "SchoolNet backend container",
-        "dns": ["configurable enterprise-default resolver", "A", "AAAA", "CNAME", "MX", "NS", "SOA", "TXT", "PTR/reverse", "resolver comparison"],
+        "dns": ["configurable enterprise-default resolver", "A", "AAAA", "CNAME", "MX", "NS", "SOA", "TXT", "PTR/reverse", "resolver comparison", "hop-by-hop PTR"],
         "routing_and_path": [
             "probe hostname/FQDN", "IPv4/IPv6 route tables", "policy rules", "neighbor cache",
-            "per-address route lookup", "UDP traceroute", "ICMP traceroute", "TCP traceroute",
-            "IPv4 path-MTU hints",
+            "per-address route lookup", "UDP/ICMP/TCP traceroute", "trace-mode comparison",
+            "bounded per-hop packet loss/latency/jitter sampling", "IPv4 path-MTU hints",
+            "optional VRF-aware device route lookup", "optional target-side return-route evidence",
         ],
         "services_and_security": [
             "requested TCP services", "automatic HTTP/HTTPS assurance", "HTTP response/security headers",
             "TLS protocol/cipher/trust/SAN/expiry", "bounded management/service exposure review",
             "server-initiated banner evidence for selected protocols", "security-risk explanation without exploitation",
         ],
+        "history": ["opt-in persistent diagnostic snapshots", "before/after fault-domain comparison", "port drift", "path drift", "security finding count drift"],
         "optional_device_ssh": [
             "interfaces/errors/logs", "CDP/LLDP", "VLAN/trunks/STP", "ARP/MAC",
-            "route table and target-specific route lookup", "OSPF process/neighbors/interfaces/database",
+            "route table and target-specific/VRF route lookup", "OSPF process/neighbors/interfaces/database",
             "BGP summary/neighbors", "PIM", "VRRP/HSRP where supported", "Linux route/socket/system evidence",
         ],
-        "correlation": ["fault-domain matrix", "ranked hypotheses", "DNS disagreement", "PMTU hints", "application/TLS assurance", "security surface", "Engineer Passport"],
         "guardrails": {
-            "auto_execute": False,
-            "arbitrary_shell": False,
-            "credential_guessing": False,
-            "exploitation": False,
-            "single_target_only": True,
-            "public_targets_default": False,
-            "live_ssh_default": False,
-            "https_credentials_default": True,
-            "bounded_exposure_ports": 16,
+            "auto_execute": False, "arbitrary_shell": False, "credential_guessing": False, "exploitation": False,
+            "single_target_only": True, "public_targets_default": False, "live_ssh_default": False,
+            "https_credentials_default": True, "bounded_exposure_ports": 16,
+            "bounded_path_samples_per_hop": 10, "indefinite_path_monitoring": False,
         },
     }
+
+
+@app.get("/api/v1/diagnostic-history", tags=["Diagnostic History"])
+async def diagnostic_history(limit: int = 30, target: str = ""):
+    return _no_store(list_runs(limit=limit, target=target))
+
+
+@app.get("/api/v1/diagnostic-history/{run_id}", tags=["Diagnostic History"])
+async def diagnostic_history_run(run_id: int):
+    item = get_run(run_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Diagnostic history run not found or history is disabled.")
+    return _no_store(item)
+
+
+@app.get("/api/v1/diagnostic-history-compare", tags=["Diagnostic History"])
+async def diagnostic_history_compare(before_id: int, after_id: int):
+    item = compare_runs(before_id, after_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="One or both diagnostic history runs were not found, or history is disabled.")
+    return _no_store(item)
