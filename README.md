@@ -51,24 +51,27 @@ SchoolNet gives small/rural school IT teams a simple repeatable way to review co
 
 ```bash
 git clone https://github.com/bnrohit/schoolnet-config-validator.git
-cd edunetguard-repo
+cd schoolnet-config-validator
 cp .env.example .env
 docker compose up --build -d
 ```
 
-Open:
+Default endpoints:
 
-- Web UI: http://localhost:3000
-- API docs: http://localhost:8000/docs
+- Web UI: http://localhost:3002
+- API docs through the UI proxy: http://localhost:3002/docs
+- Direct API docs: http://localhost:8000/docs
 - Health check: http://localhost:8000/api/v1/health
 
-### First-time demo
+The production frontend uses a same-origin Nginx proxy for `/api/*`. This prevents the browser from incorrectly trying to contact `localhost:8000` on the operator workstation.
+
+### First validation
 
 1. Open the Web UI.
-2. Click **Load demo config**.
+2. Load the included sample configuration or paste a sanitized configuration.
 3. Click **Validate**.
-4. Review findings and export the Markdown report.
-5. Replace the demo with your own sanitized config.
+4. Review findings and export the Markdown or JSON report.
+5. Use **Fix Script** only as a review-first remediation aid; validate commands before applying them.
 
 ---
 
@@ -110,7 +113,7 @@ Live SSH troubleshooting is disabled by default:
 ENABLE_LIVE_SSH=false
 ```
 
-Only enable it on a trusted internal network.
+Only enable it on a trusted internal network, and use HTTPS before entering credentials in the web UI.
 
 ---
 
@@ -177,12 +180,35 @@ Exit codes:
 Browser UI
    │
    ▼
-React/Vite frontend ──► FastAPI backend ──► Parsers ──► Validation engine
-                              │                 │              │
-                              │                 │              └─ Risk score + findings
-                              │                 └─ Cisco/Aruba config parsing
-                              └─ Markdown/JSON reports + remediation snippets
+Nginx frontend ── /api/* ──► FastAPI backend ──► Parsers ──► Validation engine
+                                   │                 │              │
+                                   │                 │              └─ Risk score + findings
+                                   │                 └─ Cisco/Aruba config parsing
+                                   └─ Markdown/JSON reports + remediation snippets
 ```
+
+---
+
+## 🔄 Upgrade an existing deployment
+
+```bash
+cd ~/schoolnet-config-validator
+git checkout main
+git pull --ff-only origin main
+cp -n .env.example .env
+docker compose build --pull frontend backend
+docker compose up -d --force-recreate frontend backend
+docker compose ps
+```
+
+Verify:
+
+```bash
+curl -fsS http://localhost:8000/api/v1/health
+curl -fsS http://localhost:3002/api/v1/examples >/dev/null && echo "frontend API proxy OK"
+```
+
+If you previously changed the web port manually, set `WEB_PORT` in `.env` instead of editing `docker-compose.yml`.
 
 ---
 
@@ -216,7 +242,7 @@ pytest backend/tests -q
 
 ## 🛣️ Roadmap
 
-- v1.2: Better reports, demo mode, sanitization, API docs
+- v1.2: Better reports, sanitization, API docs, production proxy routing
 - v1.3: PDF reports and branded change-review packets
 - v1.4: Meraki Dashboard API import
 - v1.5: SNMP read-only collection
