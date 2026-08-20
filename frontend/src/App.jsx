@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, FileSearch, TerminalSquare, Wand2, BookOpen, UploadCloud, ExternalLink } from "lucide-react";
+import { ShieldCheck, FileSearch, TerminalSquare, Wand2, BookOpen, ExternalLink } from "lucide-react";
 import ConfigValidator from './components/ConfigValidator';
 import RemediationPanel from './components/RemediationPanel';
 import TroubleshootPanel from './components/TroubleshootPanel';
@@ -22,20 +22,21 @@ export default function App() {
             <ShieldCheck className="brand-icon" size={42} />
             <div>
               <h1>SchoolNet Config Validator</h1>
-              <p className="tagline">Open-source K-12 network configuration validation and outage prevention toolkit.</p>
+              <p className="tagline">Network configuration risk analysis, validation, and outage prevention.</p>
             </div>
           </div>
           <div className="hero-actions">
-<a href="https://github.com/bnrohit/schoolnet-config-validator" target="_blank" rel="noreferrer" className="btn secondary">
-  <ExternalLink size={18}/> GitHub
-</a>            <a href="/docs" target="_blank" rel="noreferrer" className="btn"><BookOpen size={18}/> API Docs</a>
+            <a href="https://github.com/bnrohit/schoolnet-config-validator" target="_blank" rel="noreferrer" className="btn secondary">
+              <ExternalLink size={18}/> GitHub
+            </a>
+            <a href="/docs" target="_blank" rel="noreferrer" className="btn"><BookOpen size={18}/> API Docs</a>
           </div>
         </div>
         <div className="stats-grid">
-          <div className="stat"><strong>7+</strong><span>Validation checks</span></div>
-          <div className="stat"><strong>Multi-vendor</strong><span>Cisco + Aruba ready</span></div>
-          <div className="stat"><strong>Safe-first</strong><span>Offline config review</span></div>
-          <div className="stat"><strong>K-12</strong><span>Built for school IT</span></div>
+          <div className="stat"><strong>7+</strong><span>Risk validation checks</span></div>
+          <div className="stat"><strong>Multi-vendor</strong><span>Cisco + Aruba support</span></div>
+          <div className="stat"><strong>Safe-first</strong><span>Offline configuration review</span></div>
+          <div className="stat"><strong>Operational</strong><span>API + reporting + remediation</span></div>
         </div>
       </header>
 
@@ -55,7 +56,7 @@ export default function App() {
           <ActiveIcon size={24}/>
           <div>
             <h2>{tabs.find(t => t.id === activeTab)?.label}</h2>
-            <p>Use sanitized configs only. Do not upload passwords, private keys, or full production backups.</p>
+            <p>Use sanitized configurations only. Never submit passwords, private keys, or unsanitized production backups.</p>
           </div>
         </section>
 
@@ -65,7 +66,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <UploadCloud size={16}/> MVP v1.1 — designed for visibility, documentation, and community contributions.
+        SchoolNet Config Validator v1.2 · Configuration Risk Analysis · Multi-vendor Validation · Review-first Remediation
       </footer>
     </div>
   );
