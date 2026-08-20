@@ -1,7 +1,8 @@
-"""SchoolNet v1.6 application assembly.
+"""SchoolNet v1.7 application assembly.
 
-Layers Network Safety Graph and Network Incident Investigator onto the stable
-configuration-analysis API. Production loads ``application:app``.
+Layers Network Safety Graph, Incident Investigator, and Deep Network Engineer
+read-only diagnostics onto the stable configuration-analysis API. Production
+loads ``application:app``.
 """
 from typing import Any, Dict, List
 
@@ -10,15 +11,15 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 import api as base
+from deep_diagnostics import deep_investigate
 from incident_investigator import investigate_incident
 from network_graph import analyze_network_bundle
 from troubleshoot import commands as command_catalog
 from troubleshoot.linux_profile import LINUX_PROFILE
+from troubleshoot.routing_deep import extend_routing_profiles
 
 
 # Extend the shared read-only command dispatcher with a Linux server profile.
-# TroubleshootCommands resolves _profile_for at runtime, so both the dedicated
-# live diagnostics endpoint and Incident Investigator benefit from this profile.
 _original_profile_for = command_catalog._profile_for
 command_catalog.COMMON_PROFILES["linux"] = LINUX_PROFILE
 
@@ -30,14 +31,16 @@ def _profile_for_with_linux(device_type: str):
 
 
 command_catalog._profile_for = _profile_for_with_linux
+extend_routing_profiles(command_catalog)
 
-base.APP_VERSION = "1.6.0"
+base.APP_VERSION = "1.7.0"
 app = base.app
 app.version = base.APP_VERSION
 app.description = (
     "Multi-vendor configuration analysis, Network Safety Graph inference, evidence-driven "
-    "read-only incident investigation, change-impact review, rollback-aware planning, and "
-    "optional read-only network-device/Linux SSH diagnostics. No automatic production changes."
+    "incident investigation, deep DNS/route/traceroute/service/security diagnostics, "
+    "change-impact review, rollback-aware planning, and optional read-only network-device/Linux SSH. "
+    "No automatic production changes or exploitation."
 )
 
 
@@ -120,22 +123,18 @@ async def network_graph_capabilities():
 
 @app.post("/api/v1/investigate", tags=["Network Incident Investigator"])
 async def investigate(request: IncidentRequest):
-    """Run bounded read-only diagnostics and correlate likely incident causes.
-
-    Diagnostics originate from the SchoolNet backend container. Public targets
-    are denied unless ALLOW_PUBLIC_DIAGNOSTICS=true. Optional SSH collection is
-    separately gated by ENABLE_LIVE_SSH=true and uses the predefined read-only
-    command catalog only.
-    """
+    """Run bounded read-only diagnostics and correlate likely incident causes."""
     try:
-        return JSONResponse(content=investigate_incident(
+        payload = investigate_incident(
             target=request.target,
             ports=request.ports,
             dns_server=request.dns_server,
             run_trace=request.run_trace,
             security_surface=request.security_surface,
             device=request.device.model_dump(),
-        ))
+        )
+        payload["version"] = base.APP_VERSION
+        return JSONResponse(content=payload)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
@@ -154,7 +153,7 @@ async def investigate_capabilities() -> Dict[str, Any]:
         ],
         "optional_device_evidence": [
             "network-device identity/uptime", "interfaces/counters", "logs/errors", "CDP/LLDP",
-            "routing neighbors/table", "VLAN/trunks", "spanning tree", "management/access security state",
+            "deep routing/OSPF/BGP/HA state", "VLAN/trunks", "spanning tree", "management/access security state",
             "Linux kernel/uptime", "Linux addresses/routes", "Linux sockets", "failed systemd units", "warning logs",
         ],
         "correlation": [
@@ -168,5 +167,58 @@ async def investigate_capabilities() -> Dict[str, Any]:
             "public_targets_default": False,
             "live_ssh_default": False,
             "max_tcp_ports": 16,
+        },
+    }
+
+
+@app.post("/api/v1/deep-diagnostics", tags=["Deep Network Engineer"])
+async def deep_diagnostics(request: IncidentRequest):
+    """Run engineer-depth, bounded read-only diagnostics on one authorized target."""
+    try:
+        return JSONResponse(content=deep_investigate(
+            target=request.target,
+            ports=request.ports,
+            dns_server=request.dns_server,
+            run_trace=request.run_trace,
+            security_surface=request.security_surface,
+            device=request.device.model_dump(),
+        ))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Deep diagnostics failed: {exc}")
+
+
+@app.get("/api/v1/deep-diagnostics/capabilities", tags=["Deep Network Engineer"])
+async def deep_diagnostics_capabilities() -> Dict[str, Any]:
+    return {
+        "version": base.APP_VERSION,
+        "mode": "deep_bounded_read_only_network_engineer",
+        "probe_origin": "SchoolNet backend container",
+        "dns": ["A", "AAAA", "CNAME", "MX", "NS", "SOA", "TXT", "PTR/reverse", "optional resolver comparison"],
+        "routing_and_path": [
+            "probe hostname/FQDN", "IPv4/IPv6 route tables", "policy rules", "neighbor cache",
+            "per-address route lookup", "UDP traceroute", "ICMP traceroute", "TCP traceroute",
+            "IPv4 path-MTU hints",
+        ],
+        "services_and_security": [
+            "requested TCP services", "HTTP/TLS evidence", "bounded management/service exposure review",
+            "server-initiated banner evidence for selected protocols", "security-risk explanation without exploitation",
+        ],
+        "optional_device_ssh": [
+            "interfaces/errors/logs", "CDP/LLDP", "VLAN/trunks/STP", "ARP/MAC",
+            "route table and target-specific route lookup", "OSPF process/neighbors/interfaces/database",
+            "BGP summary/neighbors", "PIM", "VRRP/HSRP where supported", "Linux route/socket/system evidence",
+        ],
+        "correlation": ["fault-domain matrix", "ranked hypotheses", "DNS disagreement", "PMTU hints", "security surface", "Incident Passport"],
+        "guardrails": {
+            "auto_execute": False,
+            "arbitrary_shell": False,
+            "credential_guessing": False,
+            "exploitation": False,
+            "single_target_only": True,
+            "public_targets_default": False,
+            "live_ssh_default": False,
+            "bounded_exposure_ports": 16,
         },
     }
