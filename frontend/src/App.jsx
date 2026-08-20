@@ -7,6 +7,7 @@ import ChangeImpactLab from './components/ChangeImpactLab';
 import NetworkSafetyGraph from './components/NetworkSafetyGraph';
 import IncidentInvestigator from './components/IncidentInvestigator';
 import DeepNetworkEngineer from './components/DeepNetworkEngineer';
+import OperationalPolicyBanner from './components/OperationalPolicyBanner';
 
 const tabs = [
   { id: 'validate', label: 'Analyze Config', icon: FileSearch },
@@ -30,7 +31,7 @@ export default function App() {
             <ShieldCheck className="brand-icon" size={42} />
             <div>
               <h1>SchoolNet Config Validator</h1>
-              <p className="tagline">Multi-vendor network intelligence, deep read-only troubleshooting, live incident evidence correlation, peer-aware change safety, and outage prevention.</p>
+              <p className="tagline">Multi-vendor network intelligence, deep read-only troubleshooting, enterprise resolver context, application/TLS assurance, peer-aware change safety, and outage prevention.</p>
             </div>
           </div>
           <div className="hero-actions">
@@ -40,9 +41,9 @@ export default function App() {
         </div>
         <div className="stats-grid">
           <div className="stat"><strong>Deep Network Engineer</strong><span>DNS · routes · traces · OSPF/BGP · security</span></div>
-          <div className="stat"><strong>Incident Investigator</strong><span>Evidence correlation · probable cause</span></div>
+          <div className="stat"><strong>Application assurance</strong><span>HTTP · headers · TLS · certificate expiry</span></div>
           <div className="stat"><strong>Network Safety Graph</strong><span>Peers · paths · gateway context</span></div>
-          <div className="stat"><strong>Safety-first</strong><span>Bounded read-only diagnostics</span></div>
+          <div className="stat"><strong>Safety-first</strong><span>HTTPS-gated live credentials</span></div>
         </div>
       </header>
 
@@ -66,6 +67,8 @@ export default function App() {
           </div>
         </section>
 
+        <OperationalPolicyBanner />
+
         {activeTab === 'validate' && <ConfigValidator />}
         {activeTab === 'impact' && <ChangeImpactLab />}
         {activeTab === 'graph' && <NetworkSafetyGraph />}
@@ -76,7 +79,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <ShieldCheck size={16}/> SchoolNet v1.7 — Deep Network Engineer · Incident Investigator · Network Safety Graph · change pre-flight · review-first engineering.
+        <ShieldCheck size={16}/> SchoolNet v1.8 — resolver-aware diagnostics · application/TLS assurance · HTTPS-gated live credentials · review-first engineering.
       </footer>
     </div>
   );
