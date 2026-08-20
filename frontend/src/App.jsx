@@ -5,9 +5,9 @@ import RemediationPanel from './components/RemediationPanel';
 import TroubleshootPanel from './components/TroubleshootPanel';
 
 const tabs = [
-  { id: 'validate', label: 'Validate Config', icon: FileSearch },
-  { id: 'remediate', label: 'Fix Script', icon: Wand2 },
-  { id: 'troubleshoot', label: 'Live Checks', icon: TerminalSquare },
+  { id: 'validate', label: 'Analyze Config', icon: FileSearch },
+  { id: 'remediate', label: 'Safe Change Plan', icon: Wand2 },
+  { id: 'troubleshoot', label: 'Read-Only Live', icon: TerminalSquare },
 ];
 
 export default function App() {
@@ -22,21 +22,19 @@ export default function App() {
             <ShieldCheck className="brand-icon" size={42} />
             <div>
               <h1>SchoolNet Config Validator</h1>
-              <p className="tagline">Network configuration risk analysis, validation, and outage prevention.</p>
+              <p className="tagline">Multi-vendor network configuration intelligence, risk analysis, and outage prevention.</p>
             </div>
           </div>
           <div className="hero-actions">
-            <a href="https://github.com/bnrohit/schoolnet-config-validator" target="_blank" rel="noreferrer" className="btn secondary">
-              <ExternalLink size={18}/> GitHub
-            </a>
+            <a href="https://github.com/bnrohit/schoolnet-config-validator" target="_blank" rel="noreferrer" className="btn secondary"><ExternalLink size={18}/> GitHub</a>
             <a href="/docs" target="_blank" rel="noreferrer" className="btn"><BookOpen size={18}/> API Docs</a>
           </div>
         </div>
         <div className="stats-grid">
-          <div className="stat"><strong>7+</strong><span>Risk validation checks</span></div>
-          <div className="stat"><strong>Multi-vendor</strong><span>Cisco + Aruba support</span></div>
-          <div className="stat"><strong>Safe-first</strong><span>Offline configuration review</span></div>
-          <div className="stat"><strong>Operational</strong><span>API + reporting + remediation</span></div>
+          <div className="stat"><strong>Auto-detect</strong><span>Platform identification</span></div>
+          <div className="stat"><strong>20+ platforms</strong><span>Switches, routers & appliances</span></div>
+          <div className="stat"><strong>Safety-first</strong><span>Pre-check · rollback · verify</span></div>
+          <div className="stat"><strong>Read-only live</strong><span>No config-mode automation</span></div>
         </div>
       </header>
 
@@ -56,7 +54,7 @@ export default function App() {
           <ActiveIcon size={24}/>
           <div>
             <h2>{tabs.find(t => t.id === activeTab)?.label}</h2>
-            <p>Use sanitized configurations only. Never submit passwords, private keys, or unsanitized production backups.</p>
+            <p>Use sanitized configuration text. Do not upload passwords, private keys, tokens, or unreviewed production backups.</p>
           </div>
         </section>
 
@@ -66,7 +64,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        SchoolNet Config Validator v1.2 · Configuration Risk Analysis · Multi-vendor Validation · Review-first Remediation
+        <ShieldCheck size={16}/> SchoolNet v1.3 — universal, evidence-based, review-first network engineering assistance.
       </footer>
     </div>
   );
