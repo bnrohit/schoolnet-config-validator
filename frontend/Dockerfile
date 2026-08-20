@@ -3,6 +3,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# Use same-origin API calls in the production image so the browser talks to
+# the frontend Nginx proxy instead of the user's own localhost:8000.
+ARG VITE_API_URL=.
+ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
 FROM nginx:1.27-alpine
