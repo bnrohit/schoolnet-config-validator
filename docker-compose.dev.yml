@@ -1,7 +1,9 @@
 services:
   backend:
-    build: ./backend
-    command: uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: uvicorn application:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
     env_file:
@@ -18,6 +20,6 @@ services:
     environment:
       - VITE_API_URL=http://localhost:8000
     ports:
-      - "3000:5173"
+      - "3002:5173"
     depends_on:
       - backend
