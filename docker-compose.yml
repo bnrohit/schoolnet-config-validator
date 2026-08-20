@@ -4,9 +4,8 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
+      - APP_ENV=${APP_ENV:-production}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3002,http://127.0.0.1:3002}
       - ENABLE_LIVE_SSH=${ENABLE_LIVE_SSH:-false}
       - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-2}
