@@ -7,57 +7,99 @@
 ![Docker](https://img.shields.io/badge/docker-ready-blue)
 ![K-12](https://img.shields.io/badge/focus-K--12%20networks-purple)
 
-**SchoolNet Config Validator** is an open-source, safety-first network engineering toolkit for configuration risk analysis, proposed-change pre-flight review, rollback-aware planning, and read-only troubleshooting.
+**SchoolNet Config Validator v1.9** is an open-source, safety-first, multi-vendor network engineering and troubleshooting platform for configuration analysis, live read-only diagnostics, path intelligence, change-impact review, drift comparison, and rollback-aware operations.
 
-It is designed for real operational problems: VLAN mistakes, native VLAN mismatches, STP instability, unrestricted trunks, routing changes, management lockout, DHCP relay errors, weak management security, firewall/ACL drift, and configuration changes that look small but can create a large outage blast radius.
+It is designed around four practical questions:
 
-> Review-first design: SchoolNet analyzes evidence and produces engineering guidance. It does not automatically push production configuration changes.
+1. **What is wrong?**
+2. **Where is the fault?**
+3. **What changed or what is risky?**
+4. **What should an engineer verify before and after a change?**
+
+> Review-first design: SchoolNet analyzes evidence and produces engineering guidance. It does **not** automatically push production configuration changes, brute-force credentials, exploit vulnerabilities, or run arbitrary shell commands.
+
+For a detailed feature-by-feature explanation, see [`docs/PRODUCT_OVERVIEW.md`](docs/PRODUCT_OVERVIEW.md).
 
 ---
 
-## ✨ What it does
+## ✨ Current capabilities
+
+### Analyze Config
 
 - Auto-detect or manually select 20+ common network platform families
-- Deep structured validation for Cisco IOS/IOS-XE and Aruba platforms, plus conservative universal parsing for other network OS families
-- Detect evidence-backed Layer 2, routing, management-plane, security, and resilience risks
-- Produce risk score, confidence, impact, pre-checks, rollback, and post-change validation guidance
-- Compare **current vs proposed configuration** in the **Change Impact Lab**
-- Estimate affected operational domains / blast radius before a change
-- Detect management-lockout, trunk/native-VLAN, STP, routing, ACL/firewall, DHCP relay, interface, and default-route change signatures
-- Generate a **Change Gate**: `BLOCK`, `HOLD`, `CAUTION`, or `REVIEW`
-- Generate a semantic **Configuration DNA** fingerprint for drift/change evidence
-- Export a Change Passport JSON for change records
-- Generate review-first safe change plans
-- Run optional read-only live diagnostics with defensive command blocking
-- Export JSON and Markdown configuration-analysis reports
-- Run in Docker Compose with web UI + FastAPI API
+- Deep Cisco IOS/IOS-XE and Aruba parsing plus conservative universal parsing for other platforms
+- Detect evidence-backed Layer 2, routing, management-plane, security, service, interface, and resilience risks
+- Risk score, confidence, impact, evidence, pre-checks, rollback, and post-change validation
 
----
+### Change Impact Lab
 
-## 🧠 Change Impact Lab
+- Compare current vs proposed configuration
+- Operational diff and blast-radius domains
+- Change Gate: `BLOCK`, `HOLD`, `CAUTION`, or `REVIEW`
+- Configuration DNA / semantic drift fingerprint
+- VLAN, routing, ACL/firewall, management, service, and interface change signatures
+- Change Passport JSON
 
-SchoolNet v1.4 adds a pre-production change-analysis workflow.
+### Network Safety Graph
 
-Paste:
+- Multi-device topology/dependency inference
+- CDP/LLDP/equivalent peer evidence
+- Shared transit, trunk, VLAN, gateway, and routing relationships
+- Peer-aware proposed-change checks
+- First-hop/second-hop impact propagation
+- Network-wide change gate
 
-1. the current sanitized configuration, and
-2. the proposed sanitized configuration.
+### Incident Investigator
 
-SchoolNet calculates:
+- DNS and reverse lookup
+- ICMP reachability and packet loss
+- route lookup and traceroute
+- bounded TCP service tests
+- HTTP status and TLS evidence
+- management/service exposure review
+- optional read-only device/Linux evidence
+- ranked probable-cause hypotheses and Incident Passport
 
-- line-level operational diff
-- change density
-- high-impact change signatures
-- affected domains: management, routing, Layer 2, security policy, services, interfaces
-- VLAN additions/removals
-- routing-protocol additions/removals
-- semantic configuration fingerprint before/after
-- pre-change evidence to capture
-- controlled implementation sequence
-- rollback contract
-- post-change proof / validation steps
+### Deep Network Engineer
 
-The feature intentionally does **not** claim a perfect digital twin. A configuration file cannot reveal every physical topology, runtime dependency, software defect, or live protocol state. High-risk changes still require human approval, live pre-checks, and a verified console/OOB recovery path.
+- DNS A/AAAA/CNAME/MX/NS/SOA/TXT/PTR
+- enterprise/default resolver context and comparison
+- IPv4/IPv6 routes, policy rules, neighbor cache, per-target route lookup
+- UDP, ICMP, and TCP traceroute
+- path-MTU hints
+- HTTP/HTTPS application assurance
+- response/security headers
+- TLS protocol, cipher, trust, SANs, validity, and expiry
+- bounded security-surface review
+- optional OSPF/BGP/PIM/VRRP/HSRP/VLAN/STP/ARP/MAC/interface/logging evidence where supported
+
+### Path Intelligence & Drift Lab
+
+- Hop-by-hop PTR naming
+- Visual UDP/ICMP/TCP path comparison
+- First trace-mode divergence evidence
+- Bounded MTR-style per-hop loss/latency/jitter sampling
+- Optional VRF/routing-instance context for supported route lookups
+- Optional forward/return route evidence from a read-only device
+- Opt-in SQLite diagnostic history
+- Before/after drift comparison
+- JSON export and browser Print / Save PDF
+
+### Safe Change Plan
+
+- Evidence
+- Impact
+- Pre-change checks
+- Controlled implementation sequence
+- Rollback contract
+- Post-change validation
+
+### Read-Only Live
+
+- Optional predefined read-only diagnostics for supported network devices and Linux
+- Disabled by default
+- HTTPS required for live credentials by default
+- Defensive blocking of obvious write/config/reload operations
 
 ---
 
@@ -107,84 +149,102 @@ docker compose up --build -d
 
 Default endpoints:
 
-- Web UI: http://localhost:3002
-- API docs through the UI proxy: http://localhost:3002/docs
-- Direct API docs: http://localhost:8000/docs
-- Health check: http://localhost:8000/api/v1/health
+- Web UI: `http://localhost:3002`
+- API docs through UI proxy: `http://localhost:3002/docs`
+- Direct API docs: `http://localhost:8000/docs`
+- Health check: `http://localhost:8000/api/v1/health`
 
-The production frontend uses a same-origin Nginx proxy for `/api/*` so browser API requests stay on the SchoolNet host instead of trying to contact the operator workstation's localhost.
+The production frontend uses a same-origin Nginx proxy for `/api/*`.
+
+---
+
+## ⚙️ Important environment settings
+
+```env
+APP_ENV=production
+API_PORT=8000
+WEB_PORT=3002
+VITE_API_URL=.
+
+# Optional enterprise resolver. Empty = container/system resolver.
+DEFAULT_DNS_SERVER=
+AUTO_APPLICATION_PROBE=true
+
+# Live device/Linux SSH
+ENABLE_LIVE_SSH=false
+REQUIRE_HTTPS_FOR_LIVE_CREDENTIALS=true
+ALLOW_INSECURE_LIVE_CREDENTIALS=false
+
+# Public targets blocked by default
+ALLOW_PUBLIC_DIAGNOSTICS=false
+
+# Diagnostic history is opt-in because it stores internal network evidence
+ENABLE_DIAGNOSTIC_HISTORY=false
+DIAGNOSTIC_HISTORY_RETENTION=100
+```
 
 ---
 
 ## 🔐 Security model
 
-SchoolNet is designed to process **sanitized configuration text**.
+SchoolNet is designed for **authorized administration and sanitized configuration evidence**.
 
-Do not upload:
+Do not upload or retain unnecessary:
 
 - passwords or enable secrets
 - private keys
 - API tokens
 - unsanitized production backups
-- student data
-- sensitive diagrams containing information you do not intend to expose
+- student/staff personal data
+- sensitive diagrams or logs you do not intend to store
 
-The API sanitizes several common credential patterns before analysis, but operators must still review data before submission.
+Key guardrails:
 
-Live SSH troubleshooting is disabled by default:
+- active diagnostics are bounded to one authorized target
+- public targets are blocked by default
+- no subnet/range scanning in the troubleshooting workflows
+- no brute force or credential guessing
+- no exploitation
+- no arbitrary shell
+- no automatic production configuration changes
+- live SSH is disabled by default
+- live credentials are blocked over insecure HTTP by default
+- live investigation responses are returned with no-store cache controls
+- diagnostic history is opt-in
 
-```bash
-ENABLE_LIVE_SSH=false
-```
-
-Only enable live diagnostics on a trusted internal network. Use HTTPS before entering credentials in the web UI, and use a least-privilege/read-only network account where the platform supports it.
-
----
-
-## ✅ Engineering checks
-
-| Area | Example analysis |
-|---|---|
-| VLAN / trunking | Missing/removed VLANs, native/PVID risk, broad trunks, dynamic trunking |
-| STP / loops | STP disablement, edge protection, topology-change risk |
-| Routing | OSPF/BGP/IS-IS change awareness, default-route changes, route-policy review |
-| Management | Telnet/HTTP exposure, AAA/TACACS/RADIUS changes, management lockout risk |
-| Security policy | ACL/firewall/NAT policy changes and blast-radius awareness |
-| Services | DHCP relay, DNS/NTP/logging/SNMP dependency changes |
-| Interfaces | Shutdown/address/MTU/speed/duplex changes |
-| Resilience | Uplink/LAG/UDLD/rollback/recovery considerations |
-| Observability | Pre/post evidence, logs, counters, monitoring continuity |
+Use HTTPS before entering live device credentials, and use least-privilege/read-only accounts.
 
 ---
 
-## 📡 API examples
+## 🧠 Example troubleshooting workflow
 
-Validate a configuration:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/validate \
-  -H "Content-Type: application/json" \
-  -d '{"vendor":"auto","config_text":"hostname access01\n..."}'
-```
-
-Run Change Impact Lab:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/change-impact \
-  -H "Content-Type: application/json" \
-  -d '{
-    "vendor":"auto",
-    "before_config":"hostname access01\ninterface Gi1/0/48\n switchport mode trunk\n switchport trunk allowed vlan 10,20",
-    "after_config":"hostname access01\ninterface Gi1/0/48\n switchport mode trunk\n switchport trunk allowed vlan 10,20,30"
-  }'
-```
-
-Upload config:
-
-```bash
-curl -F "file=@configs/example-broken-switch.txt" \
-  -F "vendor=auto" \
-  http://localhost:8000/api/v1/validate/upload
+```text
+User reports service problem
+        ↓
+DNS resolution / PTR
+        ↓
+Route lookup / policy route context
+        ↓
+UDP + ICMP + TCP traceroute
+        ↓
+Per-hop loss / latency / jitter
+        ↓
+TCP service reachability
+        ↓
+HTTP / TLS assurance
+        ↓
+Optional device evidence:
+OSPF / BGP / STP / interfaces / logs / route lookup
+        ↓
+Rank likely fault domains
+        ↓
+Review security exposure
+        ↓
+Compare proposed change
+        ↓
+Safe plan + rollback + post-change proof
+        ↓
+Save before/after evidence
 ```
 
 ---
@@ -197,18 +257,19 @@ Browser UI
    ▼
 Nginx frontend ── /api/* ──► FastAPI backend
                                   │
-                 ┌────────────────┼─────────────────┐
-                 │                │                 │
-                 ▼                ▼                 ▼
-           Config Parser    Validation Engine   Change Impact Lab
-                 │                │                 │
-                 │                │                 ├─ operational diff
-                 │                │                 ├─ blast radius
-                 │                │                 ├─ change gate
-                 │                │                 ├─ Config DNA
-                 │                │                 └─ rollback/validation plan
-                 │                │
-                 └────────► review-first reports
+          ┌───────────────────────┼────────────────────────┐
+          │                       │                        │
+          ▼                       ▼                        ▼
+   Config Analysis       Incident / Deep Engine     Path Intelligence
+          │                       │                        │
+          ▼                       ▼                        ▼
+   Change Impact         DNS/routes/services        Trace correlation
+   Safety Graph          HTTP/TLS/device state      History/drift
+          │                       │                        │
+          └───────────────────────┼────────────────────────┘
+                                  ▼
+                         Review-first evidence
+                         rollback / validation
 ```
 
 ---
@@ -220,7 +281,6 @@ If `git pull` reports local changes, inspect/stash them first instead of forcing
 ```bash
 cd ~/schoolnet-config-validator
 git status --short
-git stash push -m "pre-schoolnet-upgrade" -- docker-compose.yml  # only if that file is locally modified
 git checkout main
 git pull --ff-only origin main
 ```
@@ -245,48 +305,40 @@ Verify:
 
 ```bash
 curl -fsS http://localhost:8000/api/v1/health
+curl -fsS http://localhost:8000/api/v1/runtime-policy
 curl -fsS http://localhost:3002/api/v1/vendors >/dev/null && echo "frontend API proxy OK"
 ```
 
----
-
-## 🧪 Development
-
-Backend:
-
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn api:app --reload
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Tests:
-
-```bash
-pytest backend/tests -q
-```
+Do **not** remove persistent volumes if you enabled diagnostic history.
 
 ---
 
-## 🛣️ Roadmap
+## 📚 Documentation
 
-- **v1.3**: Universal multi-vendor analysis, evidence/confidence, review-first change plans, vendor-aware read-only diagnostics
-- **v1.4**: Change Impact Lab, blast-radius analysis, change gate, Configuration DNA, Change Passport
-- **v1.5**: Multi-device topology bundle analysis and peer-consistency checks
-- **v1.6**: Historical configuration drift timeline and approved-baseline policy
-- **v1.7**: NetBox/Nautobot inventory context and change dependency enrichment
-- **v1.8**: Role-based login, audit log, and change approvals
-- **v2.0**: Cross-device Network Safety Graph for pre-change dependency reasoning
+- [`docs/PRODUCT_OVERVIEW.md`](docs/PRODUCT_OVERVIEW.md) — what SchoolNet does and who it helps
+- [`CHANGELOG.md`](CHANGELOG.md) — release-by-release feature history
+- API/OpenAPI docs — `/docs`
+- Existing operator/development docs under `docs/`
+
+---
+
+## 🛣️ Product direction
+
+Current stable line: **v1.9**.
+
+High-value future work should be added only with appropriate privilege/secret controls:
+
+- SNMPv3 / streaming telemetry overlay
+- authenticated users, RBAC, and audit logging
+- secure LLDP/CDP topology ingestion
+- historical interface/error/OSPF/BGP state correlation
+- hardened temporary PCAP worker with interface/filter/duration/size controls
+- allowlisted ServiceNow/Jira/Slack integrations
+- stronger cross-product incident correlation with EduNetGuard
+
+The long-term goal is an evidence-driven network operations assistant that helps answer:
+
+> **What is broken, what changed before it broke, what is the likely fault domain, and what is the safest next action?**
 
 ---
 
@@ -307,7 +359,7 @@ See `docs/CONTRIBUTING.md`.
 
 ## ⚠️ Disclaimer
 
-SchoolNet provides configuration-analysis and change-review recommendations. It is not a substitute for validated network design, vendor documentation, live operational state, maintenance procedures, or qualified engineering review. Always preserve a tested rollback and recovery path before production changes.
+SchoolNet provides configuration-analysis, diagnostic, and change-review recommendations. It is not a substitute for validated network design, vendor documentation, live operational state, maintenance procedures, or qualified engineering review. Always preserve a tested rollback and recovery path before production changes.
 
 ---
 
