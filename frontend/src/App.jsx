@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
-import { ShieldCheck, FileSearch, TerminalSquare, Wand2, BookOpen, ExternalLink, GitCompareArrows, Network } from "lucide-react";
+import { ShieldCheck, FileSearch, TerminalSquare, Wand2, BookOpen, ExternalLink, GitCompareArrows, Network, Radar } from "lucide-react";
 import ConfigValidator from './components/ConfigValidator';
 import RemediationPanel from './components/RemediationPanel';
 import TroubleshootPanel from './components/TroubleshootPanel';
 import ChangeImpactLab from './components/ChangeImpactLab';
 import NetworkSafetyGraph from './components/NetworkSafetyGraph';
+import IncidentInvestigator from './components/IncidentInvestigator';
 
 const tabs = [
   { id: 'validate', label: 'Analyze Config', icon: FileSearch },
   { id: 'impact', label: 'Change Impact Lab', icon: GitCompareArrows },
   { id: 'graph', label: 'Network Safety Graph', icon: Network },
+  { id: 'investigate', label: 'Incident Investigator', icon: Radar },
   { id: 'remediate', label: 'Safe Change Plan', icon: Wand2 },
   { id: 'troubleshoot', label: 'Read-Only Live', icon: TerminalSquare },
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('validate');
+  const [activeTab, setActiveTab] = useState('investigate');
   const ActiveIcon = tabs.find(t => t.id === activeTab)?.icon || FileSearch;
 
   return (
@@ -26,7 +28,7 @@ export default function App() {
             <ShieldCheck className="brand-icon" size={42} />
             <div>
               <h1>SchoolNet Config Validator</h1>
-              <p className="tagline">Multi-vendor network intelligence, peer-aware change safety, and outage prevention.</p>
+              <p className="tagline">Multi-vendor network intelligence, live incident evidence correlation, peer-aware change safety, and outage prevention.</p>
             </div>
           </div>
           <div className="hero-actions">
@@ -35,10 +37,10 @@ export default function App() {
           </div>
         </div>
         <div className="stats-grid">
-          <div className="stat"><strong>Auto-detect</strong><span>20+ platform families</span></div>
+          <div className="stat"><strong>Incident Investigator</strong><span>DNS · path · services · TLS · evidence</span></div>
           <div className="stat"><strong>Network Safety Graph</strong><span>Peers · paths · gateway context</span></div>
           <div className="stat"><strong>Change pre-flight</strong><span>Blast radius · gate · rollback</span></div>
-          <div className="stat"><strong>Review-first</strong><span>No automatic production changes</span></div>
+          <div className="stat"><strong>Safety-first</strong><span>Bounded read-only diagnostics</span></div>
         </div>
       </header>
 
@@ -58,19 +60,20 @@ export default function App() {
           <ActiveIcon size={24}/>
           <div>
             <h2>{tabs.find(t => t.id === activeTab)?.label}</h2>
-            <p>Use sanitized configuration and read-only evidence. Do not upload passwords, private keys, tokens, or unreviewed production backups.</p>
+            <p>Use only systems and networks you are authorized to administer. Diagnostics are bounded/read-only and results must be validated before production changes.</p>
           </div>
         </section>
 
         {activeTab === 'validate' && <ConfigValidator />}
         {activeTab === 'impact' && <ChangeImpactLab />}
         {activeTab === 'graph' && <NetworkSafetyGraph />}
+        {activeTab === 'investigate' && <IncidentInvestigator />}
         {activeTab === 'remediate' && <RemediationPanel />}
         {activeTab === 'troubleshoot' && <TroubleshootPanel />}
       </main>
 
       <footer className="footer">
-        <ShieldCheck size={16}/> SchoolNet v1.5 — universal analysis · Network Safety Graph · peer-aware change pre-flight · review-first engineering.
+        <ShieldCheck size={16}/> SchoolNet v1.6 — Incident Investigator · Network Safety Graph · change pre-flight · review-first engineering.
       </footer>
     </div>
   );
