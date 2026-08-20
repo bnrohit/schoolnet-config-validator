@@ -12,3 +12,4 @@ build/
 *_report.json
 remediation.txt
 uploads/
+secrets/
