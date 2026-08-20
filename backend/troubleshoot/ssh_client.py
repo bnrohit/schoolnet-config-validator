@@ -12,28 +12,49 @@ from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationExc
 class SwitchSSHClient:
     def __init__(self, host: str, username: str, password: str,
                  device_type: str = "cisco_ios", port: int = 22,
-                 secret: str = ""):
+                 secret: str = "", key_file: str = "",
+                 strict_host_key: bool = False, known_hosts_file: str = ""):
         self.host = host
         self.username = username
         self.password = password
         self.device_type = device_type
         self.port = port
         self.secret = secret
+        self.key_file = key_file
+        self.strict_host_key = strict_host_key
+        self.known_hosts_file = known_hosts_file
         self.connection = None
 
     def connect(self) -> bool:
         try:
-            self.connection = ConnectHandler(
-                device_type=self.device_type,
-                host=self.host,
-                username=self.username,
-                password=self.password,
-                port=self.port,
-                secret=self.secret,
-                conn_timeout=10,
-                banner_timeout=10,
-                session_log=None,
-            )
+            kwargs = {
+                "device_type": self.device_type,
+                "host": self.host,
+                "username": self.username,
+                "password": self.password,
+                "port": self.port,
+                "secret": self.secret,
+                "conn_timeout": 10,
+                "banner_timeout": 10,
+                "session_log": None,
+                "allow_agent": False,
+            }
+            if self.key_file:
+                kwargs.update({
+                    "key_file": self.key_file,
+                    "use_keys": True,
+                })
+            if self.strict_host_key:
+                kwargs["ssh_strict"] = True
+                if self.known_hosts_file:
+                    kwargs.update({
+                        "alt_host_keys": True,
+                        "alt_key_file": self.known_hosts_file,
+                    })
+                else:
+                    kwargs["system_host_keys"] = True
+
+            self.connection = ConnectHandler(**kwargs)
             if self.secret:
                 # Enable mode is used only to read privileged show commands.
                 # The command library never enters configuration mode.
