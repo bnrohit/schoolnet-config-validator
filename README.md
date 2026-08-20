@@ -7,34 +7,83 @@
 ![Docker](https://img.shields.io/badge/docker-ready-blue)
 ![K-12](https://img.shields.io/badge/focus-K--12%20networks-purple)
 
-**SchoolNet Config Validator** is an open-source K-12 network configuration validation and outage-prevention toolkit. It helps school IT teams, consultants, and network engineers safely review switch/router configs before small mistakes become campus outages.
+**SchoolNet Config Validator** is an open-source, safety-first network engineering toolkit for configuration risk analysis, proposed-change pre-flight review, rollback-aware planning, and read-only troubleshooting.
 
-It is built for real school network problems: VLAN mistakes, native VLAN risk, STP instability, unrestricted trunks, half-duplex ports, weak SNMP, Telnet exposure, missing DHCP snooping, and lack of uplink resilience.
+It is designed for real operational problems: VLAN mistakes, native VLAN mismatches, STP instability, unrestricted trunks, routing changes, management lockout, DHCP relay errors, weak management security, firewall/ACL drift, and configuration changes that look small but can create a large outage blast radius.
 
-> Safe-first design: offline config review works without live network access. Live SSH troubleshooting is disabled by default.
+> Review-first design: SchoolNet analyzes evidence and produces engineering guidance. It does not automatically push production configuration changes.
 
 ---
 
 ## ✨ What it does
 
-- Validate Cisco IOS / IOS-XE switch configs
-- Partially parse Aruba AOS-CX / AOS-Switch configs
-- Detect high-risk access-layer misconfigurations
-- Generate executive risk score and plain-English leadership summary
-- Export JSON and Markdown reports
-- Generate review-first remediation snippets
-- Validate one config, uploaded file, CSV, or API batch
-- Provide FastAPI OpenAPI docs for automation
-- Provide CLI mode for pipelines and engineers
-- Run in Docker Compose with web UI + API
+- Auto-detect or manually select 20+ common network platform families
+- Deep structured validation for Cisco IOS/IOS-XE and Aruba platforms, plus conservative universal parsing for other network OS families
+- Detect evidence-backed Layer 2, routing, management-plane, security, and resilience risks
+- Produce risk score, confidence, impact, pre-checks, rollback, and post-change validation guidance
+- Compare **current vs proposed configuration** in the **Change Impact Lab**
+- Estimate affected operational domains / blast radius before a change
+- Detect management-lockout, trunk/native-VLAN, STP, routing, ACL/firewall, DHCP relay, interface, and default-route change signatures
+- Generate a **Change Gate**: `BLOCK`, `HOLD`, `CAUTION`, or `REVIEW`
+- Generate a semantic **Configuration DNA** fingerprint for drift/change evidence
+- Export a Change Passport JSON for change records
+- Generate review-first safe change plans
+- Run optional read-only live diagnostics with defensive command blocking
+- Export JSON and Markdown configuration-analysis reports
+- Run in Docker Compose with web UI + FastAPI API
 
 ---
 
-## 🧩 Why this matters for schools
+## 🧠 Change Impact Lab
 
-School networks support instruction, testing, phones, cameras, Wi-Fi, access control, and administrative systems. A small switch misconfiguration can cause AP drops, phone outages, DHCP failures, VLAN leaks, or broadcast storms across a campus.
+SchoolNet v1.4 adds a pre-production change-analysis workflow.
 
-SchoolNet gives small/rural school IT teams a simple repeatable way to review configs before changes are pushed.
+Paste:
+
+1. the current sanitized configuration, and
+2. the proposed sanitized configuration.
+
+SchoolNet calculates:
+
+- line-level operational diff
+- change density
+- high-impact change signatures
+- affected domains: management, routing, Layer 2, security policy, services, interfaces
+- VLAN additions/removals
+- routing-protocol additions/removals
+- semantic configuration fingerprint before/after
+- pre-change evidence to capture
+- controlled implementation sequence
+- rollback contract
+- post-change proof / validation steps
+
+The feature intentionally does **not** claim a perfect digital twin. A configuration file cannot reveal every physical topology, runtime dependency, software defect, or live protocol state. High-risk changes still require human approval, live pre-checks, and a verified console/OOB recovery path.
+
+---
+
+## 🌐 Platform coverage
+
+The platform catalog includes:
+
+- Auto-detect
+- Cisco IOS / IOS-XE / NX-OS / ASA
+- Arista EOS
+- Juniper Junos
+- Aruba AOS-CX / AOS-Switch
+- HPE Comware
+- ExtremeXOS / VOSS
+- Brocade / Ruckus FastIron / ICX
+- Dell OS10 / OS9
+- MikroTik RouterOS
+- VyOS
+- Fortinet FortiOS
+- Palo Alto PAN-OS
+- SONiC
+- FRRouting / Linux routing
+- Ubiquiti EdgeOS
+- Generic / unknown network-device configuration
+
+Support depth differs by platform. Unknown or partially understood syntax is handled conservatively instead of being silently interpreted as Cisco syntax.
 
 ---
 
@@ -63,49 +112,24 @@ Default endpoints:
 - Direct API docs: http://localhost:8000/docs
 - Health check: http://localhost:8000/api/v1/health
 
-The production frontend uses a same-origin Nginx proxy for `/api/*`. This prevents the browser from incorrectly trying to contact `localhost:8000` on the operator workstation.
-
-### First validation
-
-1. Open the Web UI.
-2. Load the included sample configuration or paste a sanitized configuration.
-3. Click **Validate**.
-4. Review findings and export the Markdown or JSON report.
-5. Use **Fix Script** only as a review-first remediation aid; validate commands before applying them.
-
----
-
-## 🖥️ Recommended install location
-
-Best place to run this:
-
-- Internal NOC VM
-- Monitoring VLAN server
-- Admin workstation with Docker Desktop
-- Lab VM used for change reviews
-
-Do **not** install directly on:
-
-- Domain controllers
-- DHCP production servers
-- Core routers/switches
-- Internet-exposed servers without VPN/HTTPS
+The production frontend uses a same-origin Nginx proxy for `/api/*` so browser API requests stay on the SchoolNet host instead of trying to contact the operator workstation's localhost.
 
 ---
 
 ## 🔐 Security model
 
-SchoolNet is designed to store and process **sanitized configuration text** only.
+SchoolNet is designed to process **sanitized configuration text**.
 
 Do not upload:
 
-- Passwords or enable secrets
-- Private keys
-- Full production backups containing secrets
-- Student data
-- Sensitive diagrams
+- passwords or enable secrets
+- private keys
+- API tokens
+- unsanitized production backups
+- student data
+- sensitive diagrams containing information you do not intend to expose
 
-The app includes a **Sanitize** helper that redacts common config secrets, but you should still review before uploading.
+The API sanitizes several common credential patterns before analysis, but operators must still review data before submission.
 
 Live SSH troubleshooting is disabled by default:
 
@@ -113,64 +137,55 @@ Live SSH troubleshooting is disabled by default:
 ENABLE_LIVE_SSH=false
 ```
 
-Only enable it on a trusted internal network, and use HTTPS before entering credentials in the web UI.
+Only enable live diagnostics on a trusted internal network. Use HTTPS before entering credentials in the web UI, and use a least-privilege/read-only network account where the platform supports it.
 
 ---
 
-## ✅ Validation checks
+## ✅ Engineering checks
 
-| Area | Example findings |
+| Area | Example analysis |
 |---|---|
-| VLAN correctness | Access port assigned to non-existent VLAN, VLAN 1 data use |
-| Native VLAN risk | Native VLAN 1, native VLAN not in allowed trunk list |
-| STP safety | Missing PortFast, BPDU Guard, Root Guard, STP mode |
-| Trunk hygiene | All VLANs allowed, DTP/dynamic trunk risk |
-| Duplex/speed | Half-duplex, hard-coded speed without duplex |
-| Security | Telnet enabled, weak SNMP communities, missing DHCP snooping |
-| Uplink resilience | Single uplink, no port-channel, fiber uplink without UDLD |
+| VLAN / trunking | Missing/removed VLANs, native/PVID risk, broad trunks, dynamic trunking |
+| STP / loops | STP disablement, edge protection, topology-change risk |
+| Routing | OSPF/BGP/IS-IS change awareness, default-route changes, route-policy review |
+| Management | Telnet/HTTP exposure, AAA/TACACS/RADIUS changes, management lockout risk |
+| Security policy | ACL/firewall/NAT policy changes and blast-radius awareness |
+| Services | DHCP relay, DNS/NTP/logging/SNMP dependency changes |
+| Interfaces | Shutdown/address/MTU/speed/duplex changes |
+| Resilience | Uplink/LAG/UDLD/rollback/recovery considerations |
+| Observability | Pre/post evidence, logs, counters, monitoring continuity |
 
 ---
 
 ## 📡 API examples
 
-Validate pasted config:
+Validate a configuration:
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/validate \
   -H "Content-Type: application/json" \
-  -d @examples/validate-request.sample.json
+  -d '{"vendor":"auto","config_text":"hostname access01\n..."}'
+```
+
+Run Change Impact Lab:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/change-impact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vendor":"auto",
+    "before_config":"hostname access01\ninterface Gi1/0/48\n switchport mode trunk\n switchport trunk allowed vlan 10,20",
+    "after_config":"hostname access01\ninterface Gi1/0/48\n switchport mode trunk\n switchport trunk allowed vlan 10,20,30"
+  }'
 ```
 
 Upload config:
 
 ```bash
 curl -F "file=@configs/example-broken-switch.txt" \
-  -F "vendor=cisco_ios" \
+  -F "vendor=auto" \
   http://localhost:8000/api/v1/validate/upload
 ```
-
-Generate Markdown report:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/report/markdown \
-  -H "Content-Type: application/json" \
-  -d '{"result": {}}'
-```
-
----
-
-## 🧰 CLI examples
-
-```bash
-python -m cli.main validate --file configs/example-broken-switch.txt --vendor cisco_ios --json
-python -m cli.main fix --file configs/example-broken-switch.txt --output remediation.txt
-```
-
-Exit codes:
-
-- `0` = no high/critical findings
-- `1` = high findings detected
-- `2` = critical findings detected
 
 ---
 
@@ -180,22 +195,47 @@ Exit codes:
 Browser UI
    │
    ▼
-Nginx frontend ── /api/* ──► FastAPI backend ──► Parsers ──► Validation engine
-                                   │                 │              │
-                                   │                 │              └─ Risk score + findings
-                                   │                 └─ Cisco/Aruba config parsing
-                                   └─ Markdown/JSON reports + remediation snippets
+Nginx frontend ── /api/* ──► FastAPI backend
+                                  │
+                 ┌────────────────┼─────────────────┐
+                 │                │                 │
+                 ▼                ▼                 ▼
+           Config Parser    Validation Engine   Change Impact Lab
+                 │                │                 │
+                 │                │                 ├─ operational diff
+                 │                │                 ├─ blast radius
+                 │                │                 ├─ change gate
+                 │                │                 ├─ Config DNA
+                 │                │                 └─ rollback/validation plan
+                 │                │
+                 └────────► review-first reports
 ```
 
 ---
 
 ## 🔄 Upgrade an existing deployment
 
+If `git pull` reports local changes, inspect/stash them first instead of forcing an overwrite.
+
 ```bash
 cd ~/schoolnet-config-validator
+git status --short
+git stash push -m "pre-schoolnet-upgrade" -- docker-compose.yml  # only if that file is locally modified
 git checkout main
 git pull --ff-only origin main
-cp -n .env.example .env
+```
+
+Keep ports in `.env`, not by editing `docker-compose.yml`:
+
+```env
+WEB_PORT=3002
+API_PORT=8000
+VITE_API_URL=.
+```
+
+Rebuild:
+
+```bash
 docker compose build --pull frontend backend
 docker compose up -d --force-recreate frontend backend
 docker compose ps
@@ -205,10 +245,8 @@ Verify:
 
 ```bash
 curl -fsS http://localhost:8000/api/v1/health
-curl -fsS http://localhost:3002/api/v1/examples >/dev/null && echo "frontend API proxy OK"
+curl -fsS http://localhost:3002/api/v1/vendors >/dev/null && echo "frontend API proxy OK"
 ```
-
-If you previously changed the web port manually, set `WEB_PORT` in `.env` instead of editing `docker-compose.yml`.
 
 ---
 
@@ -242,26 +280,26 @@ pytest backend/tests -q
 
 ## 🛣️ Roadmap
 
-- v1.2: Better reports, sanitization, API docs, production proxy routing
-- v1.3: PDF reports and branded change-review packets
-- v1.4: Meraki Dashboard API import
-- v1.5: SNMP read-only collection
-- v1.6: NetBox/Nautobot import
-- v1.7: Role-based login and audit log
-- v1.8: Teams/email notifications
-- v2.0: Rule marketplace for school IT teams
+- **v1.3**: Universal multi-vendor analysis, evidence/confidence, review-first change plans, vendor-aware read-only diagnostics
+- **v1.4**: Change Impact Lab, blast-radius analysis, change gate, Configuration DNA, Change Passport
+- **v1.5**: Multi-device topology bundle analysis and peer-consistency checks
+- **v1.6**: Historical configuration drift timeline and approved-baseline policy
+- **v1.7**: NetBox/Nautobot inventory context and change dependency enrichment
+- **v1.8**: Role-based login, audit log, and change approvals
+- **v2.0**: Cross-device Network Safety Graph for pre-change dependency reasoning
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests are welcome. Good first contributions:
+Pull requests are welcome. Useful contributions include:
 
-- Add a new vendor parser
-- Add a new validation rule
-- Improve remediation text
-- Add test configs
-- Improve docs and screenshots
+- vendor parsers
+- vendor-specific read-only command profiles
+- validation rules with tests
+- safe change-impact signatures
+- sanitized sample configurations
+- documentation and screenshots
 
 See `docs/CONTRIBUTING.md`.
 
@@ -269,7 +307,7 @@ See `docs/CONTRIBUTING.md`.
 
 ## ⚠️ Disclaimer
 
-SchoolNet provides configuration review recommendations. Always validate changes in a lab or maintenance window and review generated commands with a qualified network engineer before applying them to production.
+SchoolNet provides configuration-analysis and change-review recommendations. It is not a substitute for validated network design, vendor documentation, live operational state, maintenance procedures, or qualified engineering review. Always preserve a tested rollback and recovery path before production changes.
 
 ---
 

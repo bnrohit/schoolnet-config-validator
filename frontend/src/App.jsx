@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { ShieldCheck, FileSearch, TerminalSquare, Wand2, BookOpen, ExternalLink } from "lucide-react";
+import { ShieldCheck, FileSearch, TerminalSquare, Wand2, BookOpen, ExternalLink, GitCompareArrows } from "lucide-react";
 import ConfigValidator from './components/ConfigValidator';
 import RemediationPanel from './components/RemediationPanel';
 import TroubleshootPanel from './components/TroubleshootPanel';
+import ChangeImpactLab from './components/ChangeImpactLab';
 
 const tabs = [
   { id: 'validate', label: 'Analyze Config', icon: FileSearch },
+  { id: 'impact', label: 'Change Impact Lab', icon: GitCompareArrows },
   { id: 'remediate', label: 'Safe Change Plan', icon: Wand2 },
   { id: 'troubleshoot', label: 'Read-Only Live', icon: TerminalSquare },
 ];
@@ -22,7 +24,7 @@ export default function App() {
             <ShieldCheck className="brand-icon" size={42} />
             <div>
               <h1>SchoolNet Config Validator</h1>
-              <p className="tagline">Multi-vendor network configuration intelligence, risk analysis, and outage prevention.</p>
+              <p className="tagline">Multi-vendor network configuration intelligence, change-risk analysis, and outage prevention.</p>
             </div>
           </div>
           <div className="hero-actions">
@@ -32,7 +34,7 @@ export default function App() {
         </div>
         <div className="stats-grid">
           <div className="stat"><strong>Auto-detect</strong><span>Platform identification</span></div>
-          <div className="stat"><strong>20+ platforms</strong><span>Switches, routers & appliances</span></div>
+          <div className="stat"><strong>Change pre-flight</strong><span>Blast radius · risk gate · config DNA</span></div>
           <div className="stat"><strong>Safety-first</strong><span>Pre-check · rollback · verify</span></div>
           <div className="stat"><strong>Read-only live</strong><span>No config-mode automation</span></div>
         </div>
@@ -59,12 +61,13 @@ export default function App() {
         </section>
 
         {activeTab === 'validate' && <ConfigValidator />}
+        {activeTab === 'impact' && <ChangeImpactLab />}
         {activeTab === 'remediate' && <RemediationPanel />}
         {activeTab === 'troubleshoot' && <TroubleshootPanel />}
       </main>
 
       <footer className="footer">
-        <ShieldCheck size={16}/> SchoolNet v1.3 — universal, evidence-based, review-first network engineering assistance.
+        <ShieldCheck size={16}/> SchoolNet v1.4 — universal analysis · change pre-flight · evidence-based safety · review-first engineering.
       </footer>
     </div>
   );

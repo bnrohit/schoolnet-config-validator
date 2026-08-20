@@ -19,15 +19,16 @@ from parsers import get_parser, SUPPORTED_VENDOR_IDS, VENDOR_NAMES
 from validators.engine import ValidationEngine
 from troubleshoot.ssh_client import SwitchSSHClient
 from troubleshoot.commands import TroubleshootCommands
+from change_impact import analyze_change
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.4.0"
 
 app = FastAPI(
     title="SchoolNet Config Validator API",
     description=(
         "Multi-vendor network configuration risk analysis with platform auto-detection, "
-        "evidence-based findings, rollback-aware change planning, and optional read-only live diagnostics. "
-        "Use sanitized configs only. Live SSH is disabled by default."
+        "evidence-based findings, rollback-aware change planning, offline change-impact analysis, "
+        "and optional read-only live diagnostics. Use sanitized configs only. Live SSH is disabled by default."
     ),
     version=APP_VERSION,
 )
@@ -47,6 +48,12 @@ app.add_middleware(
 class ValidateRequest(BaseModel):
     config_text: str = Field(..., description="Sanitized switch/router/network-appliance configuration text")
     vendor: str = Field("auto", description="Use 'auto' for platform detection or choose a supported vendor id")
+
+
+class ChangeImpactRequest(BaseModel):
+    before_config: str = Field(..., description="Sanitized pre-change configuration")
+    after_config: str = Field(..., description="Sanitized proposed post-change configuration")
+    vendor: str = Field("auto", description="Platform hint or auto")
 
 
 class TroubleshootRequest(BaseModel):
@@ -212,8 +219,9 @@ async def root():
         "version": APP_VERSION,
         "docs": "/docs",
         "health": "/api/v1/health",
-        "message": "Analyze sanitized multi-vendor network configs with review-first safety guidance.",
+        "message": "Analyze multi-vendor network configs and proposed changes with review-first safety guidance.",
         "auto_apply": False,
+        "features": ["configuration analysis", "change impact lab", "safe change plans", "read-only diagnostics"],
     }
 
 
@@ -239,6 +247,7 @@ async def list_rules():
             {"id": "security_gap", "name": "Security controls", "examples": ["weak secrets", "legacy IP features", "segmentation risk"]},
             {"id": "routing_risk", "name": "Routing safety", "examples": ["OSPF/BGP/ISIS change awareness", "neighbor/route pre-checks", "rollback criteria"]},
             {"id": "observability", "name": "Observability", "examples": ["logging", "monitoring dependencies", "post-change verification"]},
+            {"id": "change_impact", "name": "Change Impact Lab", "examples": ["before/after diff", "blast-radius domains", "management lockout risk", "maintenance gate"]},
         ],
         "principles": [
             "Evidence before assertion",
@@ -288,6 +297,30 @@ async def validate_config(request: ValidateRequest):
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Validation failed: {exc}")
+
+
+@app.post("/api/v1/change-impact")
+async def change_impact(request: ChangeImpactRequest):
+    """Analyze a proposed configuration change without executing anything."""
+    _validate_text_size(request.before_config)
+    _validate_text_size(request.after_config)
+    before = _sanitize_config(request.before_config)
+    after = _sanitize_config(request.after_config)
+    try:
+        result = analyze_change(before, after, request.vendor)
+        # Add platform detection on both snapshots for context. This remains
+        # conservative and does not convert the result into executable commands.
+        before_parsed = get_parser(request.vendor).parse(before)
+        after_parsed = get_parser(request.vendor).parse(after)
+        result["platform"] = {
+            "before": before_parsed.get("vendor", "unknown"),
+            "after": after_parsed.get("vendor", "unknown"),
+            "before_confidence": before_parsed.get("analysis", {}).get("parser_confidence"),
+            "after_confidence": after_parsed.get("analysis", {}).get("parser_confidence"),
+        }
+        return JSONResponse(content=result)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Change impact analysis failed: {exc}")
 
 
 @app.post("/api/v1/validate/upload")
