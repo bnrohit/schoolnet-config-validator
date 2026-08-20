@@ -13,9 +13,14 @@ services:
       - REQUIRE_HTTPS_FOR_LIVE_CREDENTIALS=${REQUIRE_HTTPS_FOR_LIVE_CREDENTIALS:-true}
       - ALLOW_INSECURE_LIVE_CREDENTIALS=${ALLOW_INSECURE_LIVE_CREDENTIALS:-false}
       - ALLOW_PUBLIC_DIAGNOSTICS=${ALLOW_PUBLIC_DIAGNOSTICS:-false}
+      - ENABLE_DIAGNOSTIC_HISTORY=${ENABLE_DIAGNOSTIC_HISTORY:-false}
+      - DIAGNOSTIC_HISTORY_DB=${DIAGNOSTIC_HISTORY_DB:-/data/diagnostic_history.sqlite3}
+      - DIAGNOSTIC_HISTORY_RETENTION=${DIAGNOSTIC_HISTORY_RETENTION:-100}
       - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-2}
     ports:
       - "${API_PORT:-8000}:8000"
+    volumes:
+      - schoolnet-history-data:/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health').read()"]
       interval: 30s
@@ -34,6 +39,9 @@ services:
         condition: service_healthy
     ports:
       - "${WEB_PORT:-3002}:80"
+
+volumes:
+  schoolnet-history-data:
 
 networks:
   default:

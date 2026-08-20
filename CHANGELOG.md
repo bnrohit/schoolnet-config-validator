@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.9.0
+
+- Added **Path Intelligence & Drift Lab** with visual UDP/ICMP/TCP path comparison and hop-by-hop PTR naming.
+- Added bounded MTR-style per-hop ICMP sampling with packet-loss, min/avg/max latency, and jitter evidence while explicitly warning about control-plane rate limiting.
+- Added trace-mode correlation that identifies the first address-level divergence without misclassifying control-plane reply differences as forwarding failures.
+- Added optional VRF/routing-instance context for predefined read-only route lookups on supported device platforms.
+- Added optional target/next-hop forward-route and return-route evidence toward the SchoolNet probe source to help identify obvious return-path/VRF discrepancies.
+- Added opt-in SQLite diagnostic history with configurable retention and a persistent Docker volume.
+- Added before/after drift comparison for open TCP ports, fault-domain states, application/TLS status, security-finding counts, resolver context, and traceroute sequences.
+- Added one-click JSON export and browser Print / Save PDF workflow for operational evidence.
+- Added runtime policy visibility for path-intelligence limits and diagnostic-history state.
+- Preserved guardrails: one authorized target, no indefinite path monitoring, no broad scanning, no credential guessing, no exploitation, no automatic changes, and HTTPS-gated live credentials.
+
 ## v1.8.0
 
 - Added configurable enterprise-default DNS via `DEFAULT_DNS_SERVER`; per-request resolver selection still overrides it.
