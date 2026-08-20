@@ -1,0 +1,10 @@
+# Optional Secure Live Bridge override for trusted HTTP-only internal deployments.
+# Copy to docker-compose.secure-live.yml and create the referenced files under
+# ./secrets/ (the directory is Git-ignored). Never commit real credentials/keys.
+services:
+  backend:
+    volumes:
+      - ./secrets/ssh_profiles.json:/run/secrets/schoolnet_ssh_profiles.json:ro
+      # Optional SSH-key authentication and strict host-key verification:
+      # - ./secrets/schoolnet_ro_key:/run/secrets/schoolnet_ro_key:ro
+      # - ./secrets/known_hosts:/run/secrets/schoolnet_known_hosts:ro

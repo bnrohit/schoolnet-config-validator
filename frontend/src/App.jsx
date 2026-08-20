@@ -33,7 +33,7 @@ export default function App() {
             <ShieldCheck className="brand-icon" size={42} />
             <div>
               <h1>SchoolNet Config Validator</h1>
-              <p className="tagline">Multi-vendor network intelligence, path-aware troubleshooting, application/TLS assurance, diagnostic drift history, peer-aware change safety, and outage prevention.</p>
+              <p className="tagline">Multi-vendor network intelligence, path-aware troubleshooting, secure live diagnostics, application/TLS assurance, diagnostic drift history, peer-aware change safety, and outage prevention.</p>
             </div>
           </div>
           <div className="hero-actions">
@@ -44,8 +44,8 @@ export default function App() {
         <div className="stats-grid">
           <div className="stat"><strong>Path Intelligence</strong><span>PTR · UDP/ICMP/TCP · loss · jitter · VRF</span></div>
           <div className="stat"><strong>Deep Network Engineer</strong><span>DNS · routes · OSPF/BGP · security</span></div>
-          <div className="stat"><strong>Diagnostic drift</strong><span>Before/after path · ports · fault domains</span></div>
-          <div className="stat"><strong>Safety-first</strong><span>Bounded probes · HTTPS-gated credentials</span></div>
+          <div className="stat"><strong>Secure Live Bridge</strong><span>HTTPS direct · HTTP OOB approval fallback</span></div>
+          <div className="stat"><strong>Safety-first</strong><span>Bounded read-only probes · least privilege</span></div>
         </div>
       </header>
 
@@ -82,7 +82,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <ShieldCheck size={16}/> SchoolNet v1.9 — path intelligence · diagnostic drift · resolver-aware app/TLS assurance · review-first engineering.
+        <ShieldCheck size={16}/> SchoolNet v1.10 — Secure Live Bridge · path intelligence · diagnostic drift · resolver-aware app/TLS assurance · review-first engineering.
       </footer>
     </div>
   );
