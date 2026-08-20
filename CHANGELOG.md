@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.7.0
+
+- Added **Deep Network Engineer**, a bounded read-only one-target troubleshooting workflow.
+- Added probe hostname/FQDN, resolver inventory, A/AAAA/CNAME/MX/NS/SOA/TXT and PTR/reverse DNS evidence, plus optional resolver comparison.
+- Added IPv4/IPv6 route-table, policy-rule, neighbor-cache, and per-resolved-address route lookup evidence.
+- Added UDP, ICMP, and TCP traceroute modes plus conservative IPv4 path-MTU hints.
+- Added bounded common management/service exposure review for FTP, Telnet, SMB, RDP, VNC, WinRM, Redis, alternate HTTP(S), Elasticsearch, and MongoDB without exploitation.
+- Added server-initiated banner evidence for selected protocols without sending credentials or protocol commands.
+- Added a fault-domain matrix across DNS, routing, ICMP, TCP, application, TLS, and security surface.
+- Added target-specific read-only route lookup on an optional network device/server.
+- Expanded multi-vendor read-only routing diagnostics with deeper OSPF process/neighbor/interface/database state, BGP neighbors, route summaries, PIM, VRRP/HSRP, and Linux routing/socket evidence where supported.
+- Added dedicated Deep Network Engineer UI and `/api/v1/deep-diagnostics` API.
+- Preserved guardrails: no arbitrary shell, no credential guessing, no exploitation, no automatic changes, public targets disabled by default, and live SSH disabled by default.
+
 ## v1.6.0
 
 - Added **Network Incident Investigator**, an evidence-driven read-only troubleshooting workflow.
