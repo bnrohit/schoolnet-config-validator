@@ -25,6 +25,7 @@ Support is always optional.
 - Core features are not locked behind a donation.
 - Donors do not receive privileged diagnostic access or hidden capabilities.
 - Donations do not change the safety-first, review-first operating model.
+- Community contributions are voluntary project support and are **not represented as tax-deductible charitable donations** unless the maintainer later establishes and documents an applicable charitable status.
 
 ## Stripe support
 
