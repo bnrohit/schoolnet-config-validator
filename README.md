@@ -7,7 +7,7 @@
 ![Docker](https://img.shields.io/badge/docker-ready-blue)
 ![K-12](https://img.shields.io/badge/focus-K--12%20networks-purple)
 
-**SchoolNet Config Validator v1.9** is an open-source, safety-first, multi-vendor network engineering and troubleshooting platform for configuration analysis, live read-only diagnostics, path intelligence, change-impact review, drift comparison, and rollback-aware operations.
+**SchoolNet Config Validator v1.10** is an open-source, safety-first, multi-vendor network engineering and troubleshooting platform for configuration analysis, live read-only diagnostics, path intelligence, change-impact review, drift comparison, rollback-aware operations, and Secure Live Bridge access for trusted HTTP-only environments.
 
 It is designed around four practical questions:
 
@@ -98,7 +98,8 @@ For a detailed feature-by-feature explanation, see [`docs/PRODUCT_OVERVIEW.md`](
 
 - Optional predefined read-only diagnostics for supported network devices and Linux
 - Disabled by default
-- HTTPS required for live credentials by default
+- HTTPS required for browser-supplied live credentials by default
+- Secure Live Bridge fallback for trusted HTTP-only environments keeps device credentials on the SchoolNet server and requires out-of-band approval
 - Defensive blocking of obvious write/config/reload operations
 
 ---
@@ -208,11 +209,12 @@ Key guardrails:
 - no arbitrary shell
 - no automatic production configuration changes
 - live SSH is disabled by default
-- live credentials are blocked over insecure HTTP by default
+- browser-supplied live credentials are blocked over insecure HTTP by default
+- Secure Live Bridge can keep server-side credentials off an HTTP browser session while requiring explicit target allowlists and out-of-band approval
 - live investigation responses are returned with no-store cache controls
 - diagnostic history is opt-in
 
-Use HTTPS before entering live device credentials, and use least-privilege/read-only accounts.
+Use HTTPS when available and least-privilege/read-only accounts. For trusted environments that do not yet have HTTPS, see [`docs/SECURE_LIVE_BRIDGE.md`](docs/SECURE_LIVE_BRIDGE.md).
 
 ---
 
@@ -316,15 +318,25 @@ Do **not** remove persistent volumes if you enabled diagnostic history.
 ## 📚 Documentation
 
 - [`docs/PRODUCT_OVERVIEW.md`](docs/PRODUCT_OVERVIEW.md) — what SchoolNet does and who it helps
+- [`docs/SECURE_LIVE_BRIDGE.md`](docs/SECURE_LIVE_BRIDGE.md) — secure fallback for live SSH when HTTPS is not yet available
+- [`SUPPORT.md`](SUPPORT.md) — how to support the open-source community around the project
 - [`CHANGELOG.md`](CHANGELOG.md) — release-by-release feature history
 - API/OpenAPI docs — `/docs`
 - Existing operator/development docs under `docs/`
 
 ---
 
+## ❤️ Support Open Source
+
+SchoolNet is intended to remain **free and open source**. If it saves your team time, helps prevent an outage, or improves troubleshooting, optional community support can help fund maintenance, testing, documentation, hosting, and new vendor coverage.
+
+See [`SUPPORT.md`](SUPPORT.md) for the support policy and Stripe checkout status. Donations never unlock hidden features or privileged access.
+
+---
+
 ## 🛣️ Product direction
 
-Current stable line: **v1.9**.
+Current stable line: **v1.10**.
 
 High-value future work should be added only with appropriate privilege/secret controls:
 
