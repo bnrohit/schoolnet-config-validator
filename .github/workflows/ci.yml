@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Enforce NGINX and mDNS security baseline
+        run: bash scripts/check_network_security_baseline.sh
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
