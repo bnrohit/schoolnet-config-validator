@@ -1,6 +1,6 @@
-fastapi==0.115.6
+fastapi==0.163.2
 uvicorn[standard]==0.34.0
-python-multipart==0.0.20
+python-multipart==0.0.34
 pydantic==2.10.5
 netmiko==4.5.0
 pytest==8.3.4
